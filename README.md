@@ -408,6 +408,14 @@ TODO
 
 The first run downloads the ingredient list from TheMealDB, so an internet connection is needed once. (To be finalized.)
 
+### Cooking demo (5a and 5b)
+
+1. In IntelliJ, run `app.CookingDemo`.
+2. Select a meal and click **I cooked this**. Pick an outcome for each ingredient in the fridge and click **Confirm**. The meal disappears from the pending list.
+3. Click **History** to see the saved meal. Restart the demo to verify that the meal is still in history and stays off the pending list.
+
+The demo starts with sample meals and saves the fridge, plan, and history in `data/cooking-demo.json`. Pass a different file path as the first program argument to start with a separate demo file. Integration with the team's main application and shared pantry and meal plan storage is pending.
+
 ---
 
 ## Notes
