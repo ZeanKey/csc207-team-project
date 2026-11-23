@@ -306,13 +306,13 @@ A read-only snapshot of a recipe. The data source supplies an ID intended to rem
 **How it is used in the program:**
 - Only two places call the API: the recipe data access object (use case 1) and the ingredient catalog loader (use case 2). Everything else reads local files.
 - We use the free test key `1`. Filtering by several ingredients at once is a paid feature, so we don't use it.
-- Results are cached in local files, so recipes we've seen still load without internet (useful for the demo).
+- Recipe caching is planned; the current recipe search requires an internet connection.
 
 | Endpoint | Purpose | Used by |
 |---|---|---|
 | `search.php?s=<name>` | Search by recipe name; returns full recipes | 1a |
-| `filter.php?i=<ingredient>` | Search by one ingredient; returns **only** id, name, picture | 1a |
-| `lookup.php?i=<id>` | Full recipe by id | 1b |
+| `filter.php?i=<ingredient>` | Search by one ingredient; returns partial recipe data | 1a |
+| `lookup.php?i=<id>` | Full recipe by id | 1a (to complete ingredient results), 1b |
 | `list.php?i=list` | All known ingredient names | 2b (catalog) |
 | `random.php` | One random recipe | 1 (extension) |
 
@@ -396,7 +396,7 @@ Following ca-login, each use case declares the small data access interface it ne
 | Shopping list | `data/shopping_list.json` | 4 | 4 |
 | Cooking history | `data/cooking_log.json` | 5 | 5a |
 
-JSON is read and written with `org.json`, and HTTP calls use OkHttp, the same libraries as ca-login.
+JSON is read and written with `org.json`. The recipe DAO uses Java's `java.net.http.HttpClient` for HTTP calls.
 
 **Shared foundation that must be merged into `main` before anyone starts their use case:**
 - All entities above, with unit tests (`IngredientName` in particular)
@@ -423,9 +423,9 @@ TODO
 
 1. Install JDK 17 or newer and Maven.
 2. Clone this repository and open it in IntelliJ.
-3. Run `app.Main`.
+3. Run `app.RecipeSearchDemo` to try recipe search, or `app.ShoppingListDemo` to try the shopping list. The integrated `app.Main` is planned.
 
-The first run downloads the ingredient list from TheMealDB, so an internet connection is needed once. (To be finalized.)
+Recipe search needs an internet connection. The ingredient catalog and its first-run download are planned.
 
 ---
 
