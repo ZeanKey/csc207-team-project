@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class CompleteMealInteractorTest {
     private static final Clock CLOCK = Clock.fixed(
@@ -122,6 +123,53 @@ class CompleteMealInteractorTest {
 
         assertTrue(presenter.failure.refreshRequired());
         assertUnchanged();
+    }
+
+    @Test
+    void reportsReadFailureBeforeAttemptingToSave() {
+        final CompleteMealDataAccessInterface unavailableStore = new CompleteMealDataAccessInterface() {
+            @Override
+            public Snapshot loadSnapshot(LocalDate weekStart) {
+                throw new IllegalStateException("Storage unavailable");
+            }
+
+            @Override
+            public boolean saveCompletion(Snapshot original, MealPlan updatedPlan, Pantry updatedPantry,
+                                          CookingRecord record) {
+                return fail("Cannot save after a failed read");
+            }
+        };
+
+        new CompleteMealInteractor(unavailableStore, presenter, CLOCK).execute(dinnerInput());
+
+        assertEquals("Could not load the meal and pantry. Try again.", presenter.failure.message());
+        assertFalse(presenter.failure.refreshRequired());
+        assertUnchanged();
+    }
+
+    @Test
+    void requestsRefreshWhenAnotherCompletionWinsTheSave() {
+        final CompleteMealDataAccessInterface concurrentStore = new CompleteMealDataAccessInterface() {
+            @Override
+            public Snapshot loadSnapshot(LocalDate weekStart) {
+                return store.loadSnapshot(weekStart);
+            }
+
+            @Override
+            public boolean saveCompletion(Snapshot original, MealPlan updatedPlan, Pantry updatedPantry,
+                                          CookingRecord record) {
+                final TestPresenter otherPresenter = new TestPresenter();
+                new CompleteMealInteractor(store, otherPresenter, CLOCK).execute(dinnerInput());
+                return store.saveCompletion(original, updatedPlan, updatedPantry, record);
+            }
+        };
+
+        new CompleteMealInteractor(concurrentStore, presenter, CLOCK).execute(dinnerInput());
+
+        assertEquals("The meal or pantry changed. Reload and try again.", presenter.failure.message());
+        assertTrue(presenter.failure.refreshRequired());
+        assertNull(presenter.success);
+        assertEquals(1, store.getCookingHistory().size());
     }
 
     @Test
