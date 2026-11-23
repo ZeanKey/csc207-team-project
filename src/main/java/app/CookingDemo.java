@@ -37,7 +37,7 @@ import java.util.List;
 public final class CookingDemo {
     private static final String COOK = "cook";
     private static final String HISTORY = "history";
-    private static final Path DEFAULT_FILE = Path.of("data", "cooking-demo.json");
+    private static final Path DEFAULT_FILE = Path.of("target", "demo-data", "cooking-demo.json");
 
     private CookingDemo() {
     }
