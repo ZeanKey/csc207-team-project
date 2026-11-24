@@ -83,6 +83,14 @@ public final class CompleteMealInteractor implements CompleteMealInputBoundary {
         try {
             saved = dataAccess.saveCompletion(snapshot, updatedPlan, updatedPantry, record);
         }
+        catch (CompleteMealDataAccessInterface.SlotAlreadyRecordedException exception) {
+            fail("Cooking was already recorded for this slot. Move this meal to another slot.", false);
+            return;
+        }
+        catch (CompleteMealDataAccessInterface.RecoveryFailedException exception) {
+            fail("Could not restore all changes. Check Meal Plan and Fridge before trying again.", true);
+            return;
+        }
         catch (IllegalStateException exception) {
             fail(SAVE_FAILED, false);
             return;

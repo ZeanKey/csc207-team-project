@@ -21,10 +21,22 @@ public interface CompleteMealDataAccessInterface {
 
     /**
      * Saves both updates and appends the history record as one operation.
-     * Returns false without saving if the snapshot has changed or the week and slot
-     * already have a history entry. A storage failure also leaves all three unchanged
-     * and is reported with an IllegalStateException.
+     * Returns false without saving if the snapshot has changed. An existing history
+     * entry for the week and slot raises SlotAlreadyRecordedException. A normal
+     * storage failure leaves the original state intact. RecoveryFailedException
+     * indicates that a saved change could not be undone.
      */
     boolean saveCompletion(Snapshot original, MealPlan updatedPlan, Pantry updatedPantry,
                            CookingRecord record);
+
+    /** A different meal has already been recorded in the same week and slot. */
+    final class SlotAlreadyRecordedException extends IllegalStateException {
+    }
+
+    /** The plan or fridge may still contain changes from a failed completion. */
+    final class RecoveryFailedException extends IllegalStateException {
+        public RecoveryFailedException(IllegalStateException cause) {
+            super("Could not restore Cooking data after a failed save.", cause);
+        }
+    }
 }

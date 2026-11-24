@@ -4,7 +4,6 @@ import entity.CookingRecord;
 import entity.IngredientName;
 import entity.MealPlan;
 import entity.MealSlot;
-import entity.MealType;
 import entity.Pantry;
 import entity.PantryItem;
 import entity.PlannedMeal;
@@ -21,8 +20,6 @@ import use_case.prepare_checklist.PrepareChecklistInputBoundary;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -69,10 +66,12 @@ public final class FileCookingDataAccessObject implements CompleteMealDataAccess
     @Override
     public synchronized boolean saveCompletion(Snapshot original, MealPlan updatedPlan,
                                                Pantry updatedPantry, CookingRecord record) {
-        if (original.mealPlan() != mealPlan || original.pantry() != pantry
-                || history.stream().anyMatch(entry -> entry.weekStart().equals(record.weekStart())
-                        && entry.slot().equals(record.slot()))) {
+        if (original.mealPlan() != mealPlan || original.pantry() != pantry) {
             return false;
+        }
+        if (history.stream().anyMatch(entry -> entry.weekStart().equals(record.weekStart())
+                && entry.slot().equals(record.slot()))) {
+            throw new SlotAlreadyRecordedException();
         }
 
         final List<CookingRecord> records = new ArrayList<>(history);
@@ -80,7 +79,7 @@ public final class FileCookingDataAccessObject implements CompleteMealDataAccess
         final JSONObject data = new JSONObject()
                 .put("plan", writePlan(updatedPlan))
                 .put("pantry", writePantry(updatedPantry))
-                .put("history", writeHistory(records));
+                .put("history", FileCookingLogDataAccessObject.writeRecords(records));
         writeFile(data);
         mealPlan = updatedPlan;
         pantry = updatedPantry;
@@ -96,7 +95,7 @@ public final class FileCookingDataAccessObject implements CompleteMealDataAccess
                 mealPlan = readPlan(plan, currentWeek);
             }
             pantry = readPantry(data.getJSONArray("pantry"));
-            history = readHistory(data.getJSONArray("history"));
+            history = FileCookingLogDataAccessObject.readRecords(data.getJSONArray("history"));
         }
         catch (IOException | JSONException | DateTimeParseException | IllegalArgumentException exception) {
             throw new IllegalStateException("Could not load Cooking demo data.", exception);
@@ -105,22 +104,7 @@ public final class FileCookingDataAccessObject implements CompleteMealDataAccess
 
     private void writeFile(JSONObject data) {
         try {
-            final Path folder = Files.createDirectories(file.getParent());
-            final Path temporary = Files.createTempFile(folder, "cooking-", ".tmp");
-            try {
-                Files.writeString(temporary, data.toString(2));
-                Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE,
-                        StandardCopyOption.REPLACE_EXISTING);
-            }
-            catch (IOException exception) {
-                try {
-                    Files.deleteIfExists(temporary);
-                }
-                catch (IOException cleanupError) {
-                    exception.addSuppressed(cleanupError);
-                }
-                throw exception;
-            }
+            FileCookingLogDataAccessObject.replaceFile(file, data.toString(2));
         }
         catch (IOException exception) {
             throw new IllegalStateException("Could not save Cooking demo data.", exception);
@@ -145,7 +129,7 @@ public final class FileCookingDataAccessObject implements CompleteMealDataAccess
             if (entry.getBoolean("cooked")) {
                 meal.markCooked();
             }
-            plan.assign(readSlot(entry), meal);
+            plan.assign(FileCookingLogDataAccessObject.readSlot(entry), meal);
         }
         return plan;
     }
@@ -159,7 +143,7 @@ public final class FileCookingDataAccessObject implements CompleteMealDataAccess
                         .put("name", ingredient.getName().getDisplayName())
                         .put("measure", ingredient.getMeasureDescription()));
             }
-            meals.put(writeSlot(slot)
+            meals.put(FileCookingLogDataAccessObject.writeSlot(slot)
                     .put("recipeId", meal.getRecipeId())
                     .put("recipeName", meal.getRecipeName())
                     .put("cooked", meal.isCooked())
@@ -192,37 +176,4 @@ public final class FileCookingDataAccessObject implements CompleteMealDataAccess
         return items;
     }
 
-    private List<CookingRecord> readHistory(JSONArray records) {
-        final List<CookingRecord> result = new ArrayList<>();
-        for (int index = 0; index < records.length(); index++) {
-            final JSONObject record = records.getJSONObject(index);
-            result.add(new CookingRecord(record.getString("recipeId"), record.getString("recipeName"),
-                    LocalDate.parse(record.getString("cookedOn")),
-                    LocalDate.parse(record.getString("week")), readSlot(record)));
-        }
-        return List.copyOf(result);
-    }
-
-    private JSONArray writeHistory(List<CookingRecord> records) {
-        final JSONArray items = new JSONArray();
-        for (CookingRecord record : records) {
-            items.put(writeSlot(record.slot())
-                    .put("recipeId", record.recipeId())
-                    .put("recipeName", record.recipeName())
-                    .put("cookedOn", record.cookedOn().toString())
-                    .put("week", record.weekStart().toString()));
-        }
-        return items;
-    }
-
-    private MealSlot readSlot(JSONObject data) {
-        return new MealSlot(DayOfWeek.valueOf(data.getString("day")),
-                MealType.valueOf(data.getString("mealType")));
-    }
-
-    private JSONObject writeSlot(MealSlot slot) {
-        return new JSONObject()
-                .put("day", slot.getDay().name())
-                .put("mealType", slot.getMealType().name());
-    }
 }

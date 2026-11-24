@@ -30,10 +30,12 @@ public final class InMemoryCompleteMealDataAccessObject implements CompleteMealD
     @Override
     public synchronized boolean saveCompletion(Snapshot original, MealPlan updatedPlan,
                                                Pantry updatedPantry, CookingRecord record) {
-        if (original.mealPlan() != mealPlan || original.pantry() != pantry
-                || history.stream().anyMatch(entry -> entry.weekStart().equals(record.weekStart())
-                        && entry.slot().equals(record.slot()))) {
+        if (original.mealPlan() != mealPlan || original.pantry() != pantry) {
             return false;
+        }
+        if (history.stream().anyMatch(entry -> entry.weekStart().equals(record.weekStart())
+                && entry.slot().equals(record.slot()))) {
+            throw new SlotAlreadyRecordedException();
         }
 
         history.add(record);

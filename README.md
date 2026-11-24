@@ -157,6 +157,7 @@ Each use case below is led by one member. A lead owns every View listed under th
 - Alternative flows:
   - There are no uncooked meals this week: the system says so and suggests the Meal Plan page.
   - The meal was already marked as cooked (e.g. the list was out of date): the system says so and refreshes the list.
+  - If cooking was already recorded for that week and slot, the user can move the replacement meal to another slot.
   - The user presses "Cancel": nothing changes.
 
 **5b. View cooking history**
@@ -197,7 +198,7 @@ Each lead splits their use case into small Interactors, one per user action. Eac
 | 2 Fridge | `LoadPantry`, `AddPantryItem`, `UpdateStockLevel`, `RemovePantryItem`, `LoadIngredientCatalog` | fridge → `FilePantryDataAccessObject`; catalog → `MealDbIngredientCatalogDataAccessObject` |
 | 3 Meal Plan | `LoadMealPlan`, `RemovePlannedMeal`, `MovePlannedMeal` | meal plan → `FileMealPlanDataAccessObject` |
 | 4 Shopping | `LoadShoppingList`, `GenerateShoppingList`, `ToggleBought` | shopping list → `FileShoppingListDataAccessObject`; meal plan, fridge (read only) |
-| 5 Cooking | `LoadUncookedMeals`, `PrepareChecklist`, `CompleteMeal`, `LoadCookingHistory` | meal plan, fridge → their DAOs; history → `FileCookingLogDataAccessObject` |
+| 5 Cooking | `LoadUncookedMeals`, `PrepareChecklist`, `CompleteMeal`, `LoadCookingHistory` | `SharedCookingDataAccessObject` uses the shared meal plan and fridge DAOs plus `FileCookingLogDataAccessObject` |
 
 ---
 
@@ -395,6 +396,8 @@ Following ca-login, each use case declares the small data access interface it ne
 | Meal plans (by week) | `data/mealplans.json` | 1c, 3, 4, 5a, 5c | 1c, 3, 5a |
 | Shopping list | `data/shopping_list.json` | 4 | 4 |
 | Cooking history | `data/cooking_log.json` | 5 | 5a |
+
+The shared Swing application can construct `CookingScreens` with the same meal plan and fridge DAOs used by the other screens, plus a `FileCookingLogDataAccessObject`. Call `onShown()` when opening Cooking. Confirm saves the plan, then the fridge, then appends history. If a save fails, Cooking restores the attempted plan and fridge writes and reports whether recovery succeeded. The history file is replaced atomically. Recovery runs while the app is open and cannot undo a process exit mid-save.
 
 JSON is read and written with `org.json`, and HTTP calls use OkHttp, the same libraries as ca-login.
 

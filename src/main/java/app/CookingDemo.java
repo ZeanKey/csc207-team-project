@@ -10,22 +10,12 @@ import entity.PantryItem;
 import entity.PlannedMeal;
 import entity.RecipeIngredient;
 import entity.StockLevel;
-import interface_adapter.cooking.CookingController;
-import interface_adapter.cooking.CookingPresenter;
-import interface_adapter.cooking.CookingViewModel;
-import use_case.complete_meal.CompleteMealInteractor;
-import use_case.load_cooking_history.LoadCookingHistoryInteractor;
-import use_case.load_uncooked_meals.LoadUncookedMealsInteractor;
-import use_case.prepare_checklist.PrepareChecklistInteractor;
-import view.CookView;
-import view.CookingHistoryView;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
-import java.awt.CardLayout;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.DayOfWeek;
@@ -35,8 +25,6 @@ import java.util.List;
 
 /** Runs the Cook and History screens using sample meals and a local demo file. */
 public final class CookingDemo {
-    private static final String COOK = "cook";
-    private static final String HISTORY = "history";
     private static final Path DEFAULT_FILE = Path.of("target", "demo-data", "cooking-demo.json");
 
     private CookingDemo() {
@@ -70,27 +58,8 @@ public final class CookingDemo {
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         final FileCookingDataAccessObject store =
                 new FileCookingDataAccessObject(file, samplePlan(week), samplePantry());
-        final CookingViewModel viewModel = new CookingViewModel();
-        final CookingPresenter presenter = new CookingPresenter(viewModel);
-        final CookingController controller = new CookingController(
-                new LoadUncookedMealsInteractor(store, presenter, clock),
-                new PrepareChecklistInteractor(store, presenter),
-                new CompleteMealInteractor(store, presenter, clock),
-                new LoadCookingHistoryInteractor(store, presenter));
-
-        final CardLayout cards = new CardLayout();
-        final JPanel screens = new JPanel(cards);
-        final CookingHistoryView historyView = new CookingHistoryView(viewModel, controller, () -> {
-            cards.show(screens, COOK);
-            controller.loadMeals();
-        });
-        final CookView cookView = new CookView(viewModel, controller, () -> {
-            cards.show(screens, HISTORY);
-            historyView.onShown();
-        });
-        screens.add(cookView, COOK);
-        screens.add(historyView, HISTORY);
-        cookView.onShown();
+        final CookingScreens screens = new CookingScreens(store, store, store, store, clock);
+        screens.onShown();
         return screens;
     }
 
