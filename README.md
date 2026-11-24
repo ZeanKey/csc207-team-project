@@ -396,7 +396,7 @@ Following ca-login, each use case declares the small data access interface it ne
 | Shopping list | `data/shopping_list.json` | 4 | 4 |
 | Cooking history | `data/cooking_log.json` | 5 | 5a |
 
-JSON is read and written with `org.json`. The recipe DAO uses Java's `java.net.http.HttpClient` for HTTP calls.
+JSON is read and written with `org.json`, and HTTP calls use OkHttp, the same libraries as ca-login.
 
 **Shared foundation that must be merged into `main` before anyone starts their use case:**
 - All entities above, with unit tests (`IngredientName` in particular)
@@ -423,9 +423,9 @@ TODO
 
 1. Install JDK 17 or newer and Maven.
 2. Clone this repository and open it in IntelliJ.
-3. Run `app.RecipeSearchDemo` to try recipe search, or `app.ShoppingListDemo` to try the shopping list. The integrated `app.Main` is planned.
+3. Run `app.Main`.
 
-Recipe search needs an internet connection. The ingredient catalog and its first-run download are planned.
+The first run downloads the ingredient list from TheMealDB, so an internet connection is needed once. (To be finalized.)
 
 ---
 
