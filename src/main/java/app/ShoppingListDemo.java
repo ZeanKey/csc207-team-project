@@ -38,7 +38,22 @@ import java.util.List;
  * Standalone demo for the shopping list use case.
  * Tick items, close the window, run again, and the ticks are still there.
  */
-public class ShoppingListDemo {
+public final class ShoppingListDemo {
+
+    /** Width of the demo window, in pixels. */
+    private static final int WINDOW_WIDTH = 560;
+    /** Height of the demo window, in pixels. */
+    private static final int WINDOW_HEIGHT = 480;
+    /** Sample expiry: a few days from today. */
+    private static final int FEW_DAYS = 5;
+    /** Sample expiry: about one month from today. */
+    private static final int ONE_MONTH_DAYS = 30;
+    /** Sample expiry: about two months from today. */
+    private static final int TWO_MONTHS_DAYS = 60;
+
+    private ShoppingListDemo() {
+        // Only main is used, so no instances are needed.
+    }
 
     /**
      * Starts the shopping list demo.
@@ -51,7 +66,8 @@ public class ShoppingListDemo {
 
     private static void createAndShow() {
         LocalDate today = LocalDate.now();
-        LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate weekStart =
+                today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
         InMemoryMealPlanReader mealPlanReader = new InMemoryMealPlanReader();
         mealPlanReader.seed(sampleMealPlan(weekStart));
@@ -59,12 +75,13 @@ public class ShoppingListDemo {
         InMemoryPantryReader pantryReader = new InMemoryPantryReader();
         pantryReader.seed(samplePantry(today));
 
-        FileShoppingListDataAccessObject shoppingDao = new FileShoppingListDataAccessObject();
+        FileShoppingListDataAccessObject shoppingDao =
+                new FileShoppingListDataAccessObject();
 
         ShoppingListViewModel viewModel = new ShoppingListViewModel();
 
-        LoadShoppingListController loadController = new LoadShoppingListController(
-                new LoadShoppingListInteractor(
+        LoadShoppingListController loadController =
+                new LoadShoppingListController(new LoadShoppingListInteractor(
                         shoppingDao, new LoadShoppingListPresenter(viewModel)));
 
         GenerateShoppingListController generateController = new GenerateShoppingListController(
@@ -81,12 +98,13 @@ public class ShoppingListDemo {
                         shoppingDao, new ToggleBoughtPresenter(viewModel)));
 
         ShoppingListView view = new ShoppingListView(
-                viewModel, loadController, generateController, toggleController);
+                viewModel, loadController, generateController,
+                toggleController);
 
         JFrame frame = new JFrame("MealMate — Shopping List Demo");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setContentPane(view);
-        frame.setSize(560, 480);
+        frame.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 
@@ -97,33 +115,37 @@ public class ShoppingListDemo {
         MealPlan plan = new MealPlan(weekStart);
         plan.assign(new MealSlot(DayOfWeek.MONDAY, MealType.DINNER),
                 new PlannedMeal("1", "Pasta", List.of(
-                        new RecipeIngredient(IngredientName.fromRawName("Garlic"), "2 cloves"),
-                        new RecipeIngredient(IngredientName.fromRawName("Olive Oil"), "1/4 cup"),
-                        new RecipeIngredient(IngredientName.fromRawName("Tomato"), "2"),
-                        new RecipeIngredient(IngredientName.fromRawName("Onion"), "1"))));
+                        ingredient("Garlic", "2 cloves"),
+                        ingredient("Olive Oil", "1/4 cup"),
+                        ingredient("Tomato", "2"),
+                        ingredient("Onion", "1"))));
         plan.assign(new MealSlot(DayOfWeek.WEDNESDAY, MealType.LUNCH),
                 new PlannedMeal("2", "Soup", List.of(
-                        new RecipeIngredient(IngredientName.fromRawName("Garlic"), "1 clove"),
-                        new RecipeIngredient(IngredientName.fromRawName("Carrot"), "2"),
-                        new RecipeIngredient(IngredientName.fromRawName("Onion"), "1"))));
+                        ingredient("Garlic", "1 clove"),
+                        ingredient("Carrot", "2"),
+                        ingredient("Onion", "1"))));
         plan.assign(new MealSlot(DayOfWeek.FRIDAY, MealType.DINNER),
                 new PlannedMeal("3", "Stir Fry", List.of(
-                        new RecipeIngredient(IngredientName.fromRawName("Chicken Breast"), "200g"),
-                        new RecipeIngredient(IngredientName.fromRawName("Garlic"), "1 clove"),
-                        new RecipeIngredient(IngredientName.fromRawName("Soy Sauce"), "2 tbsp"))));
+                        ingredient("Chicken Breast", "200g"),
+                        ingredient("Garlic", "1 clove"),
+                        ingredient("Soy Sauce", "2 tbsp"))));
         return plan;
     }
 
     private static Pantry samplePantry(LocalDate today) {
         Pantry pantry = new Pantry();
-        pantry.add(new PantryItem(
-                IngredientName.fromRawName("Olive Oil"), today.plusDays(30), StockLevel.ENOUGH));
-        pantry.add(new PantryItem(
-                IngredientName.fromRawName("Garlic"), today.minusDays(2), StockLevel.ENOUGH));
-        pantry.add(new PantryItem(
-                IngredientName.fromRawName("Onion"), today.plusDays(5), StockLevel.LOW));
-        pantry.add(new PantryItem(
-                IngredientName.fromRawName("Soy Sauce"), today.plusDays(60), StockLevel.ENOUGH));
+        pantry.add(new PantryItem(IngredientName.fromRawName("Olive Oil"),
+                today.plusDays(ONE_MONTH_DAYS), StockLevel.ENOUGH));
+        pantry.add(new PantryItem(IngredientName.fromRawName("Garlic"),
+                today.minusDays(2), StockLevel.ENOUGH));
+        pantry.add(new PantryItem(IngredientName.fromRawName("Onion"),
+                today.plusDays(FEW_DAYS), StockLevel.LOW));
+        pantry.add(new PantryItem(IngredientName.fromRawName("Soy Sauce"),
+                today.plusDays(TWO_MONTHS_DAYS), StockLevel.ENOUGH));
         return pantry;
+    }
+
+    private static RecipeIngredient ingredient(String name, String measure) {
+        return new RecipeIngredient(IngredientName.fromRawName(name), measure);
     }
 }
