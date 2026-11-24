@@ -3,6 +3,7 @@ package use_case.search_recipes;
 import entity.Recipe;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,10 +62,10 @@ class SearchRecipesInteractorTest {
         private List<Recipe> results = List.of();
 
         @Override
-        public List<Recipe> searchByName(String keyword) {
+        public List<Recipe> searchByName(String keyword) throws IOException {
             request = "name:" + keyword;
             if (fail) {
-                throw new SearchRecipesDataAccessException("unavailable");
+                throw new IOException("unavailable");
             }
             return results;
         }
