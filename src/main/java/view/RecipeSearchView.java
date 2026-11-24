@@ -5,10 +5,8 @@ import interface_adapter.search_recipes.SearchRecipesController;
 import interface_adapter.search_recipes.SearchRecipesViewModel;
 import use_case.search_recipes.RecipeSearchType;
 
-import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -18,13 +16,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Image;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URLConnection;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
@@ -117,53 +108,13 @@ public final class RecipeSearchView extends JPanel {
         message.setText(viewModel.getMessage().isEmpty() ? " " : viewModel.getMessage());
         for (Recipe recipe : viewModel.getRecipes()) {
             JPanel row = new JPanel(new BorderLayout(8, 8));
-            JLabel image = new JLabel("No image", JLabel.CENTER);
-            image.setPreferredSize(new Dimension(96, 72));
+            RecipeImageView image = new RecipeImageView(96, 72);
             row.add(image, BorderLayout.WEST);
             row.add(new JLabel(recipe.getName()), BorderLayout.CENTER);
             results.add(row);
-            loadImage(recipe.getThumbnail(), image);
+            image.setImage(recipe.getThumbnail());
         }
         results.revalidate();
         results.repaint();
-    }
-
-    private static void loadImage(URI uri, JLabel label) {
-        if (uri == null || !("https".equalsIgnoreCase(uri.getScheme())
-                || "http".equalsIgnoreCase(uri.getScheme()) || "file".equalsIgnoreCase(uri.getScheme())
-                || "jar".equalsIgnoreCase(uri.getScheme()))) {
-            return;
-        }
-        new SwingWorker<ImageIcon, Void>() {
-            @Override
-            protected ImageIcon doInBackground() throws IOException {
-                URLConnection connection = uri.toURL().openConnection();
-                connection.setConnectTimeout(5000);
-                connection.setReadTimeout(5000);
-                try (InputStream stream = connection.getInputStream()) {
-                    BufferedImage image = ImageIO.read(stream);
-                    return image == null ? null : new ImageIcon(image.getScaledInstance(96, 72, Image.SCALE_SMOOTH));
-                }
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    ImageIcon icon = get();
-                    if (icon != null) {
-                        label.setText("");
-                        label.setIcon(icon);
-                    }
-                }
-                catch (InterruptedException exception) {
-                    Thread.currentThread().interrupt();
-                }
-                catch (ExecutionException exception) {
-                    /*
-                     * Keep the placeholder if the image is unavailable.
-                     */
-                }
-            }
-        }.execute();
     }
 }
