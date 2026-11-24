@@ -8,10 +8,12 @@ import java.util.List;
  */
 public class ShoppingListViewModel {
 
+    /** The name this page is registered under in the ViewManager. */
     public static final String VIEW_NAME = "shopping list";
 
     private ShoppingListState state = new ShoppingListState();
-    private final List<ShoppingListViewModelListener> listeners = new ArrayList<>();
+    private final List<ShoppingListViewModelListener> listeners =
+            new ArrayList<>();
 
     /**
      * Listener notified when the shopping list state changes.

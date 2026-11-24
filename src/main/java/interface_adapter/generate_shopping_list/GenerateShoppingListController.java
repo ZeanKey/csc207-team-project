@@ -15,7 +15,8 @@ public class GenerateShoppingListController {
      *
      * @param interactor the generate interactor
      */
-    public GenerateShoppingListController(GenerateShoppingListInputBoundary interactor) {
+    public GenerateShoppingListController(
+            GenerateShoppingListInputBoundary interactor) {
         this.interactor = interactor;
     }
 

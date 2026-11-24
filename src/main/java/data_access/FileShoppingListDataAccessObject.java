@@ -60,7 +60,8 @@ public class FileShoppingListDataAccessObject
         JSONArray lists = root.getJSONArray(KEY_LISTS);
         for (int i = 0; i < lists.length(); i++) {
             JSONObject listJson = lists.getJSONObject(i);
-            if (weekStart.toString().equals(listJson.getString(KEY_WEEK_START))) {
+            if (weekStart.toString()
+                    .equals(listJson.getString(KEY_WEEK_START))) {
                 return fromJson(listJson);
             }
         }
@@ -74,7 +75,8 @@ public class FileShoppingListDataAccessObject
         String weekKey = shoppingList.getWeekStart().toString();
         int existingIndex = -1;
         for (int i = 0; i < lists.length(); i++) {
-            if (weekKey.equals(lists.getJSONObject(i).getString(KEY_WEEK_START))) {
+            if (weekKey.equals(
+                    lists.getJSONObject(i).getString(KEY_WEEK_START))) {
                 existingIndex = i;
                 break;
             }
@@ -98,11 +100,13 @@ public class FileShoppingListDataAccessObject
             if (!Files.exists(filePath)) {
                 JSONObject root = new JSONObject();
                 root.put(KEY_LISTS, new JSONArray());
-                Files.writeString(filePath, root.toString(2), StandardCharsets.UTF_8);
+                Files.writeString(
+                        filePath, root.toString(2), StandardCharsets.UTF_8);
             }
         }
         catch (IOException exception) {
-            throw new IllegalStateException("Could not create shopping list file", exception);
+            throw new IllegalStateException(
+                    "Could not create shopping list file", exception);
         }
     }
 
@@ -121,21 +125,25 @@ public class FileShoppingListDataAccessObject
             return root;
         }
         catch (IOException exception) {
-            throw new IllegalStateException("Could not read shopping list file", exception);
+            throw new IllegalStateException(
+                    "Could not read shopping list file", exception);
         }
     }
 
     private void writeRoot(JSONObject root) {
         try {
-            Files.writeString(filePath, root.toString(2), StandardCharsets.UTF_8);
+            Files.writeString(
+                    filePath, root.toString(2), StandardCharsets.UTF_8);
         }
         catch (IOException exception) {
-            throw new IllegalStateException("Could not write shopping list file", exception);
+            throw new IllegalStateException(
+                    "Could not write shopping list file", exception);
         }
     }
 
     private ShoppingList fromJson(JSONObject listJson) {
-        LocalDate weekStart = LocalDate.parse(listJson.getString(KEY_WEEK_START));
+        LocalDate weekStart =
+                LocalDate.parse(listJson.getString(KEY_WEEK_START));
         JSONArray itemsJson = listJson.getJSONArray(KEY_ITEMS);
         List<ShoppingItem> items = new ArrayList<>();
         for (int i = 0; i < itemsJson.length(); i++) {

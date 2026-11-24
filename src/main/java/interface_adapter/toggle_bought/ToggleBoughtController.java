@@ -28,6 +28,7 @@ public class ToggleBoughtController {
      * @param ingredientName the ingredient display name
      */
     public void execute(LocalDate weekStart, String ingredientName) {
-        interactor.execute(new ToggleBoughtInputData(weekStart, ingredientName));
+        interactor.execute(
+                new ToggleBoughtInputData(weekStart, ingredientName));
     }
 }
