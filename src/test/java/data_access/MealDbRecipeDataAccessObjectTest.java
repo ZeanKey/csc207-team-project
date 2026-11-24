@@ -2,8 +2,7 @@ package data_access;
 
 import entity.Recipe;
 import org.junit.jupiter.api.Test;
-import use_case.search_recipes.SearchRecipesDataAccessException;
-
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +21,7 @@ class MealDbRecipeDataAccessObjectTest {
             """;
 
     @Test
-    void nameSearchEncodesKeywordAndMapsFullRecipe() {
+    void nameSearchEncodesKeywordAndMapsFullRecipe() throws IOException {
         List<URI> requests = new ArrayList<>();
         MealDbRecipeDataAccessObject dao = new MealDbRecipeDataAccessObject(uri -> {
             requests.add(uri);
@@ -43,7 +42,7 @@ class MealDbRecipeDataAccessObjectTest {
     }
 
     @Test
-    void ingredientSearchLoadsFullDetailsForEachMatch() {
+    void ingredientSearchLoadsFullDetailsForEachMatch() throws IOException {
         List<URI> requests = new ArrayList<>();
         MealDbRecipeDataAccessObject dao = new MealDbRecipeDataAccessObject(uri -> {
             requests.add(uri);
@@ -60,7 +59,7 @@ class MealDbRecipeDataAccessObjectTest {
     }
 
     @Test
-    void noResultsAndOptionalFieldsAreHandled() {
+    void noResultsAndOptionalFieldsAreHandled() throws IOException {
         MealDbRecipeDataAccessObject empty = new MealDbRecipeDataAccessObject(uri -> "{\"meals\":null}");
         assertTrue(empty.searchByName("unknown").isEmpty());
         assertTrue(empty.searchByIngredient("unknown").isEmpty());
@@ -78,20 +77,30 @@ class MealDbRecipeDataAccessObjectTest {
     void failureToLoadOneDetailDoesNotReturnPartialResults() {
         MealDbRecipeDataAccessObject dao = new MealDbRecipeDataAccessObject(uri ->
                 uri.getPath().endsWith("filter.php")
-                        ? "{\"meals\":[{\"idMeal\":\"52771\"}]}" : "{\"meals\":null}");
-        assertThrows(SearchRecipesDataAccessException.class, () -> dao.searchByIngredient("garlic"));
+                        ? "{\"meals\":[{\"idMeal\":\"52771\"},{\"idMeal\":\"12345\"}]}"
+                        : uri.getQuery().equals("i=52771") ? FULL : "{\"meals\":null}");
+        assertThrows(IOException.class, () -> dao.searchByIngredient("garlic"));
+    }
+
+    @Test
+    void transportFailureIsPropagated() {
+        MealDbRecipeDataAccessObject dao = new MealDbRecipeDataAccessObject(uri -> {
+            throw new IOException("network unavailable");
+        });
+        IOException exception = assertThrows(IOException.class, () -> dao.searchByName("soup"));
+        assertEquals("network unavailable", exception.getMessage());
     }
 
     @Test
     void malformedResponseIsReportedAsFailure() {
         MealDbRecipeDataAccessObject dao = new MealDbRecipeDataAccessObject(uri -> "not json");
-        assertThrows(SearchRecipesDataAccessException.class, () -> dao.searchByName("soup"));
+        assertThrows(IOException.class, () -> dao.searchByName("soup"));
     }
 
     @Test
     void partialRecipeCannotBeMistakenForACompleteSnapshot() {
         MealDbRecipeDataAccessObject dao = new MealDbRecipeDataAccessObject(uri ->
                 "{\"meals\":[{\"idMeal\":\"1\",\"strMeal\":\"Soup\"}]}");
-        assertThrows(SearchRecipesDataAccessException.class, () -> dao.searchByName("soup"));
+        assertThrows(IOException.class, () -> dao.searchByName("soup"));
     }
 }

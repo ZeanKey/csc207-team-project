@@ -11,10 +11,17 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
-/** Standalone entry point until the team's use cases are assembled together. */
+/**
+ * Standalone entry point until the team's use cases are assembled together.
+ */
 public final class RecipeSearchDemo {
     private RecipeSearchDemo() { }
 
+    /**
+     * Starts the standalone search window.
+     *
+     * @param args unused command-line arguments
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             SearchRecipesViewModel viewModel = new SearchRecipesViewModel();

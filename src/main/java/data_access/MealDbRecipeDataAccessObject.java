@@ -3,18 +3,18 @@ package data_access;
 import entity.IngredientName;
 import entity.Recipe;
 import entity.RecipeIngredient;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import use_case.search_recipes.SearchRecipesDataAccessException;
 import use_case.search_recipes.SearchRecipesDataAccessInterface;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -33,38 +33,57 @@ public final class MealDbRecipeDataAccessObject implements SearchRecipesDataAcce
      * Creates a DAO using the educational API key and a bounded HTTP timeout.
      */
     public MealDbRecipeDataAccessObject() {
-        HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .callTimeout(Duration.ofSeconds(15))
+                .build();
         this.transport = uri -> {
-            HttpRequest request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(15)).GET().build();
-            try {
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() != 200) {
-                    throw new SearchRecipesDataAccessException("Recipe service returned HTTP " + response.statusCode());
+            Request request = new Request.Builder().url(uri.toString()).get().build();
+            try (Response response = client.newCall(request).execute()) {
+                if (response.code() != 200) {
+                    throw new IOException("Recipe service returned HTTP " + response.code());
                 }
-                return response.body();
-            }
-            catch (IOException exception) {
-                throw new SearchRecipesDataAccessException("Unable to reach the recipe service", exception);
-            }
-            catch (InterruptedException exception) {
-                Thread.currentThread().interrupt();
-                throw new SearchRecipesDataAccessException("Recipe search was interrupted", exception);
+                ResponseBody body = response.body();
+                if (body == null) {
+                    throw new IOException("Recipe service returned an empty response body");
+                }
+                return body.string();
             }
         };
     }
 
-    // Allows deterministic tests without network access.
+    /**
+     * Creates a DAO with a transport, allowing tests to avoid network access.
+     *
+     * @param transport the request transport
+     * @throws NullPointerException if transport is null
+     */
     MealDbRecipeDataAccessObject(Transport transport) {
         this.transport = Objects.requireNonNull(transport);
     }
 
     @FunctionalInterface
     interface Transport {
-        String get(URI uri);
+        /**
+         * Retrieves the response body for a request.
+         *
+         * @param uri the request URI
+         * @return the response body
+         * @throws IOException if the request cannot be completed
+         */
+        String get(URI uri) throws IOException;
     }
 
+    /**
+     * Searches TheMealDB for complete recipes by name.
+     *
+     * @param keyword non-null recipe name or search text
+     * @return complete recipe snapshots, or an empty list if none match
+     * @throws IOException if the request fails, is interrupted, or the response cannot be converted
+     * @throws NullPointerException if keyword is null
+     */
     @Override
-    public List<Recipe> searchByName(String keyword) {
+    public List<Recipe> searchByName(String keyword) throws IOException {
         JSONArray meals = getMeals("search.php?s=" + encode(keyword));
         List<Recipe> recipes = new ArrayList<>();
         try {
@@ -74,12 +93,20 @@ public final class MealDbRecipeDataAccessObject implements SearchRecipesDataAcce
             return recipes;
         }
         catch (JSONException | IllegalArgumentException exception) {
-            throw new SearchRecipesDataAccessException("Invalid recipe data", exception);
+            throw new IOException("Invalid recipe data", exception);
         }
     }
 
+    /**
+     * Searches TheMealDB by ingredient and loads details for each match.
+     *
+     * @param keyword non-null ingredient name
+     * @return complete recipe snapshots, or an empty list if none match
+     * @throws IOException if a request fails or is interrupted, or a response is invalid
+     * @throws NullPointerException if keyword is null
+     */
     @Override
-    public List<Recipe> searchByIngredient(String keyword) {
+    public List<Recipe> searchByIngredient(String keyword) throws IOException {
         String ingredient = keyword.strip().replaceAll("\\s+", "_");
         JSONArray matches = getMeals("filter.php?i=" + encode(ingredient));
         List<Recipe> recipes = new ArrayList<>();
@@ -88,38 +115,38 @@ public final class MealDbRecipeDataAccessObject implements SearchRecipesDataAcce
                 String id = required(matches.getJSONObject(i), "idMeal");
                 JSONArray details = getMeals("lookup.php?i=" + encode(id));
                 if (details.length() != 1) {
-                    throw new SearchRecipesDataAccessException("A matching recipe could not be loaded");
+                    throw new IOException("A matching recipe could not be loaded");
                 }
                 JSONObject meal = details.getJSONObject(0);
                 if (!id.equals(required(meal, "idMeal"))) {
-                    throw new SearchRecipesDataAccessException("Recipe lookup returned an unexpected ID");
+                    throw new IOException("Recipe lookup returned an unexpected ID");
                 }
                 recipes.add(toRecipe(meal));
             }
             return recipes;
         }
         catch (JSONException | IllegalArgumentException exception) {
-            throw new SearchRecipesDataAccessException("Invalid recipe data", exception);
+            throw new IOException("Invalid recipe data", exception);
         }
     }
 
-    private JSONArray getMeals(String endpoint) {
+    private JSONArray getMeals(String endpoint) throws IOException {
         String response = transport.get(URI.create(API + endpoint));
         try {
             JSONObject root = new JSONObject(response);
             if (!root.has("meals")) {
-                throw new SearchRecipesDataAccessException("Recipe response is missing meals");
+                throw new IOException("Recipe response is missing meals");
             }
             return root.isNull("meals") ? new JSONArray() : root.getJSONArray("meals");
         }
         catch (JSONException exception) {
-            throw new SearchRecipesDataAccessException("Invalid recipe response", exception);
+            throw new IOException("Invalid recipe response", exception);
         }
     }
 
-    private static Recipe toRecipe(JSONObject meal) {
+    private static Recipe toRecipe(JSONObject meal) throws IOException {
         if (!meal.has("strInstructions") || !meal.has("strIngredient1") || !meal.has("strMeasure1")) {
-            throw new SearchRecipesDataAccessException("Recipe response does not contain full details");
+            throw new IOException("Recipe response does not contain full details");
         }
         String id = required(meal, "idMeal");
         String name = required(meal, "strMeal");
@@ -138,10 +165,10 @@ public final class MealDbRecipeDataAccessObject implements SearchRecipesDataAcce
                 thumbnail == null || thumbnail.isBlank() ? null : URI.create(thumbnail), ingredients);
     }
 
-    private static String required(JSONObject json, String key) {
+    private static String required(JSONObject json, String key) throws IOException {
         String value = optional(json, key);
         if (value == null || value.isBlank()) {
-            throw new SearchRecipesDataAccessException("Recipe response is missing " + key);
+            throw new IOException("Recipe response is missing " + key);
         }
         return value;
     }
