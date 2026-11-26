@@ -18,6 +18,7 @@ import org.json.JSONObject;
 import use_case.add_pantry_item.AddPantryItemDataAccessInterface;
 import use_case.generate_shopping_list.PantryReader;
 import use_case.load_pantry.LoadPantryDataAccessInterface;
+import use_case.remove_pantry_item.RemovePantryItemDataAccessInterface;
 import use_case.update_stock_level.UpdateStockLevelDataAccessInterface;
 
 /**
@@ -25,7 +26,8 @@ import use_case.update_stock_level.UpdateStockLevelDataAccessInterface;
  */
 public class FilePantryDataAccessObject
         implements LoadPantryDataAccessInterface, PantryReader,
-        UpdateStockLevelDataAccessInterface, AddPantryItemDataAccessInterface {
+        UpdateStockLevelDataAccessInterface, AddPantryItemDataAccessInterface,
+        RemovePantryItemDataAccessInterface {
     private static final String KEY_ITEMS = "items";
     private static final String KEY_NAME = "name";
     private static final String KEY_EXPIRY_DATE = "expiryDate";

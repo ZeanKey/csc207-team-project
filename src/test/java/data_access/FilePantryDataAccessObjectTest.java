@@ -19,6 +19,10 @@ import use_case.add_pantry_item.AddPantryItemInputData;
 import use_case.add_pantry_item.AddPantryItemInteractor;
 import use_case.add_pantry_item.AddPantryItemOutputBoundary;
 import use_case.add_pantry_item.AddPantryItemOutputData;
+import use_case.remove_pantry_item.RemovePantryItemInputData;
+import use_case.remove_pantry_item.RemovePantryItemInteractor;
+import use_case.remove_pantry_item.RemovePantryItemOutputBoundary;
+import use_case.remove_pantry_item.RemovePantryItemOutputData;
 import use_case.update_stock_level.UpdateStockLevelInputData;
 import use_case.update_stock_level.UpdateStockLevelInteractor;
 import use_case.update_stock_level.UpdateStockLevelOutputBoundary;
@@ -170,6 +174,54 @@ class FilePantryDataAccessObjectTest {
         assertEquals(StockLevel.ENOUGH, savedItem.getStockLevel());
     }
 
+    @Test
+    void removePantryItemPersistsOnlyTheRequestedRemoval() {
+        final Path filePath = tempDirectory.resolve("pantry.json");
+        final FilePantryDataAccessObject dataAccess = new FilePantryDataAccessObject(filePath);
+        final Pantry pantry = new Pantry();
+        pantry.add(item("Chicken Breast", null, StockLevel.LOW));
+        pantry.add(item("Garlic", null, StockLevel.ENOUGH));
+        dataAccess.savePantry(pantry);
+        final RemoveRecordingPresenter presenter = new RemoveRecordingPresenter();
+        final RemovePantryItemInteractor interactor =
+                new RemovePantryItemInteractor(dataAccess, presenter);
+
+        interactor.execute(new RemovePantryItemInputData("  chicken_breast  "));
+
+        final Pantry reloaded = new FilePantryDataAccessObject(filePath).loadPantry();
+        assertTrue(presenter.succeeded);
+        assertFalse(presenter.outputData.isUseCaseFailed());
+        assertEquals("Chicken Breast", presenter.outputData.getIngredientName());
+        assertEquals("", presenter.outputData.getMessage());
+        assertTrue(reloaded.find(IngredientName.fromRawName("Chicken Breast")).isEmpty());
+        assertEquals(1, reloaded.sortedByExpiry().size());
+        assertEquals(StockLevel.ENOUGH, reloaded.find(
+                IngredientName.fromRawName("Garlic")).orElseThrow().getStockLevel());
+    }
+
+    @Test
+    void removePantryItemRejectsInvalidOrMissingNamesWithoutWriting() throws IOException {
+        final Path filePath = tempDirectory.resolve("pantry.json");
+        final String original = "{\"items\": []}\n";
+        Files.writeString(filePath, original, StandardCharsets.UTF_8);
+        final FilePantryDataAccessObject dataAccess = new FilePantryDataAccessObject(filePath);
+        final RemoveRecordingPresenter presenter = new RemoveRecordingPresenter();
+        final RemovePantryItemInteractor interactor =
+                new RemovePantryItemInteractor(dataAccess, presenter);
+
+        interactor.execute(null);
+        assertEquals("Ingredient name is required.", presenter.outputData.getMessage());
+        interactor.execute(new RemovePantryItemInputData(" _ "));
+        assertEquals("Ingredient name is required.", presenter.outputData.getMessage());
+        interactor.execute(new RemovePantryItemInputData("Garlic"));
+        assertEquals("Ingredient is not in the pantry.", presenter.outputData.getMessage());
+
+        assertFalse(presenter.succeeded);
+        assertTrue(presenter.outputData.isUseCaseFailed());
+        assertNull(presenter.outputData.getIngredientName());
+        assertEquals(original, Files.readString(filePath, StandardCharsets.UTF_8));
+    }
+
     private PantryItem item(String name, LocalDate expiryDate, StockLevel stockLevel) {
         return new PantryItem(IngredientName.fromRawName(name), expiryDate, stockLevel);
     }
@@ -198,6 +250,22 @@ class FilePantryDataAccessObjectTest {
 
         @Override
         public void prepareFailView(AddPantryItemOutputData outputData) {
+            this.outputData = outputData;
+        }
+    }
+
+    private static final class RemoveRecordingPresenter implements RemovePantryItemOutputBoundary {
+        private boolean succeeded;
+        private RemovePantryItemOutputData outputData;
+
+        @Override
+        public void prepareSuccessView(RemovePantryItemOutputData outputData) {
+            succeeded = true;
+            this.outputData = outputData;
+        }
+
+        @Override
+        public void prepareFailView(RemovePantryItemOutputData outputData) {
             this.outputData = outputData;
         }
     }
