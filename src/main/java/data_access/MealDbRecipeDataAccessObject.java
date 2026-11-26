@@ -27,6 +27,11 @@ import java.util.Objects;
 public final class MealDbRecipeDataAccessObject implements SearchRecipesDataAccessInterface {
     private static final String API = "https://www.themealdb.com/api/json/v1/1/";
     private static final String ID_PREFIX = "meal:";
+    private static final int CONNECT_TIMEOUT_SECONDS = 10;
+    private static final int CALL_TIMEOUT_SECONDS = 15;
+    private static final int HTTP_OK = 200;
+    /** TheMealDB lists ingredients in fields strIngredient1 to strIngredient20. */
+    private static final int MAX_INGREDIENTS = 20;
     private final Transport transport;
 
     /**
@@ -34,13 +39,13 @@ public final class MealDbRecipeDataAccessObject implements SearchRecipesDataAcce
      */
     public MealDbRecipeDataAccessObject() {
         OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .callTimeout(Duration.ofSeconds(15))
+                .connectTimeout(Duration.ofSeconds(CONNECT_TIMEOUT_SECONDS))
+                .callTimeout(Duration.ofSeconds(CALL_TIMEOUT_SECONDS))
                 .build();
         this.transport = uri -> {
             Request request = new Request.Builder().url(uri.toString()).get().build();
             try (Response response = client.newCall(request).execute()) {
-                if (response.code() != 200) {
+                if (response.code() != HTTP_OK) {
                     throw new IOException("Recipe service returned HTTP " + response.code());
                 }
                 ResponseBody body = response.body();
@@ -151,7 +156,7 @@ public final class MealDbRecipeDataAccessObject implements SearchRecipesDataAcce
         String id = required(meal, "idMeal");
         String name = required(meal, "strMeal");
         List<RecipeIngredient> ingredients = new ArrayList<>();
-        for (int i = 1; i <= 20; i++) {
+        for (int i = 1; i <= MAX_INGREDIENTS; i++) {
             String ingredient = optional(meal, "strIngredient" + i);
             if (ingredient != null && !ingredient.isBlank()) {
                 String measure = optional(meal, "strMeasure" + i);

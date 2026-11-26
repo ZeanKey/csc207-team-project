@@ -33,9 +33,12 @@ public final class RecipeSearchView extends JPanel implements SearchRecipesViewM
     private static final String SEARCH_PENDING_TEXT = "Searching...";
     private static final int THUMBNAIL_WIDTH = 96;
     private static final int THUMBNAIL_HEIGHT = 72;
+    private static final int KEYWORD_FIELD_COLUMNS = 20;
+    private static final int LAYOUT_GAP = 8;
+    private static final int PAGE_PADDING = 12;
 
     private final SearchRecipesViewModel viewModel;
-    private final JTextField keyword = new JTextField(20);
+    private final JTextField keyword = new JTextField(KEYWORD_FIELD_COLUMNS);
     private final JComboBox<RecipeSearchType> searchType = new JComboBox<>(RecipeSearchType.values());
     private final JButton search = new JButton(SEARCH_BUTTON_TEXT);
     private final JLabel message = new JLabel(" ");
@@ -51,11 +54,11 @@ public final class RecipeSearchView extends JPanel implements SearchRecipesViewM
      * @throws NullPointerException if viewModel is null
      */
     public RecipeSearchView(SearchRecipesViewModel viewModel) {
-        super(new BorderLayout(8, 8));
+        super(new BorderLayout(LAYOUT_GAP, LAYOUT_GAP));
         this.viewModel = Objects.requireNonNull(viewModel);
         this.viewModel.addListener(this);
 
-        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        setBorder(BorderFactory.createEmptyBorder(PAGE_PADDING, PAGE_PADDING, PAGE_PADDING, PAGE_PADDING));
 
         final JPanel controls = new JPanel();
         controls.add(new JLabel(SEARCH_FIELD_LABEL_TEXT));
@@ -136,7 +139,7 @@ public final class RecipeSearchView extends JPanel implements SearchRecipesViewM
         results.removeAll();
         message.setText(state.getMessage().isEmpty() ? " " : state.getMessage());
         for (RecipeSearchResultViewData result : state.getResults()) {
-            final JPanel row = new JPanel(new BorderLayout(8, 8));
+            final JPanel row = new JPanel(new BorderLayout(LAYOUT_GAP, LAYOUT_GAP));
             final RecipeImageView image = new RecipeImageView(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
             row.add(image, BorderLayout.WEST);
             row.add(new JLabel(result.getName()), BorderLayout.CENTER);

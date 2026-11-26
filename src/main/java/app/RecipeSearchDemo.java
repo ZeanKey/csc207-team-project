@@ -15,6 +15,9 @@ import javax.swing.WindowConstants;
  * Standalone entry point until the team's use cases are assembled together.
  */
 public final class RecipeSearchDemo {
+    private static final int WINDOW_WIDTH = 700;
+    private static final int WINDOW_HEIGHT = 500;
+
     private RecipeSearchDemo() { }
 
     /**
@@ -33,7 +36,7 @@ public final class RecipeSearchDemo {
             final JFrame frame = new JFrame("MealMate — Search Recipes");
             frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
             frame.setContentPane(view);
-            frame.setSize(700, 500);
+            frame.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });
