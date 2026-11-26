@@ -181,7 +181,7 @@ Each use case below is led by one member. A lead owns every View listed under th
 | Yilin Hou | 2a View, 2b Add, 2c Update/remove fridge items; ingredient name catalog | Filter by expiring soon |
 | Shuyin Hu | 3a View week and a planned meal, 3b Remove/move | Switch to previous/next week; copy last week |
 | Shaoheng Fan | 4a Generate, 4b Tick off | Bought items go straight into the fridge; export as text |
-| Shengxi Zeng | 5a Cook a planned meal, 5b History | 5c Stats; undo a completion |
+| Jesse Zeng | 5a Cook a planned meal, 5b History | 5c Stats; undo a completion |
 
 Use cases 1 and 2 don't depend on any other use case, so they are the first end-to-end prototype for Milestone 2.
 
@@ -228,7 +228,26 @@ Every ingredient in the app is compared through this class, never through a raw 
 - `getDisplayName(): String` TODO
 
 ### Recipe
-- Fields: `id`, `name`, `category`, `area`, `instructions`, `thumbnailUrl`, `ingredients: List<RecipeIngredient>`
+A read-only snapshot of a recipe. The data source supplies an ID intended to remain stable across snapshots of the same recipe.
+
++ Fields:
+- `id: String` source-qualified recipe identifier
+- `name: String` recipe name
+- `category: String` recipe category; may be `null`
+- `area: String` cuisine or region; may be `null`
+- `instruction: String` preparation instructions; may be `null`
+- `thumbnail: URI` image location; may be `null`
+- `ingredients: List<RecipeIngredient>` recipe ingredients; may be empty
++ Constructor:
+- `Recipe(String id, String name, String category, String area, String instruction, URI thumbnail, List<RecipeIngredient> ingredients)` intended to be called by a data access object. ID, name, the ingredient list, and its elements cannot be `null`.
++ Methods:
+- `getId(): String` returns the recipe ID
+- `getName(): String` returns the recipe name
+- `getCategory(): String` returns the category
+- `getArea(): String` returns the cuisine or region
+- `getInstruction(): String` returns the preparation instructions
+- `getThumbnail(): URI` returns the image location
+- `getIngredients(): List<RecipeIngredient>` returns a mutable, shallow copy of the ingredient list
 
 ### StockLevel (enum)
 - `ENOUGH`, `LOW`. "Out of stock" is not a level: an item that is used up is removed from the fridge.
