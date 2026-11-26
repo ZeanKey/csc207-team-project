@@ -17,7 +17,8 @@ public class LoadShoppingListController {
      *
      * @param interactor the load interactor
      */
-    public LoadShoppingListController(LoadShoppingListInputBoundary interactor) {
+    public LoadShoppingListController(
+            LoadShoppingListInputBoundary interactor) {
         this.interactor = interactor;
     }
 

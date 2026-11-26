@@ -8,8 +8,10 @@ import entity.ShoppingList;
  */
 public class ToggleBoughtInteractor implements ToggleBoughtInputBoundary {
 
-    private static final String ITEM_NOT_FOUND = "Item is not on the shopping list.";
-    private static final String LIST_NOT_FOUND = "No shopping list is saved for this week.";
+    private static final String ITEM_NOT_FOUND =
+            "Item is not on the shopping list.";
+    private static final String LIST_NOT_FOUND =
+            "No shopping list is saved for this week.";
 
     private final ToggleBoughtDataAccessInterface dataAccess;
     private final ToggleBoughtOutputBoundary presenter;
@@ -28,14 +30,16 @@ public class ToggleBoughtInteractor implements ToggleBoughtInputBoundary {
 
     @Override
     public void execute(ToggleBoughtInputData inputData) {
-        ShoppingList list = dataAccess.loadShoppingList(inputData.getWeekStart());
+        ShoppingList list =
+                dataAccess.loadShoppingList(inputData.getWeekStart());
         if (list == null) {
             presenter.prepareFailView(new ToggleBoughtOutputData(
                     null, LIST_NOT_FOUND, true));
             return;
         }
 
-        IngredientName name = IngredientName.fromRawName(inputData.getIngredientName());
+        IngredientName name =
+                IngredientName.fromRawName(inputData.getIngredientName());
         try {
             list.toggleBought(name);
         }
@@ -46,6 +50,7 @@ public class ToggleBoughtInteractor implements ToggleBoughtInputBoundary {
         }
 
         dataAccess.saveShoppingList(list);
-        presenter.prepareSuccessView(new ToggleBoughtOutputData(list, "", false));
+        presenter.prepareSuccessView(
+                new ToggleBoughtOutputData(list, "", false));
     }
 }

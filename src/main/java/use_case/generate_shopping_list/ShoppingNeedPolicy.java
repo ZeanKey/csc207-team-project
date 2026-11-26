@@ -12,7 +12,8 @@ import java.time.LocalDate;
 public interface ShoppingNeedPolicy {
 
     /**
-     * Classifies a pantry item, or returns null if the ingredient can be skipped.
+     * Classifies a pantry item, or returns null if the ingredient can be
+     * skipped.
      *
      * @param pantryItem the matching pantry item, or null if not in the fridge
      * @param today today's date

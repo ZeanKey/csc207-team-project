@@ -9,7 +9,8 @@ import use_case.generate_shopping_list.GenerateShoppingListOutputData;
 /**
  * Presents generate-shopping-list results into the shopping list ViewModel.
  */
-public class GenerateShoppingListPresenter implements GenerateShoppingListOutputBoundary {
+public class GenerateShoppingListPresenter
+        implements GenerateShoppingListOutputBoundary {
 
     private final ShoppingListViewModel viewModel;
 
@@ -25,7 +26,8 @@ public class GenerateShoppingListPresenter implements GenerateShoppingListOutput
     @Override
     public void prepareSuccessView(GenerateShoppingListOutputData outputData) {
         ShoppingListState state = viewModel.getState();
-        ShoppingListPresenterHelper.applyList(state, outputData.getShoppingList());
+        ShoppingListPresenterHelper.applyList(
+                state, outputData.getShoppingList());
         state.setError("");
         state.setMessage(outputData.getMessage());
         viewModel.setState(state);

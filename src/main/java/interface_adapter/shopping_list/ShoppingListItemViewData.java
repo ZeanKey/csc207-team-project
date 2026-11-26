@@ -18,7 +18,8 @@ public class ShoppingListItemViewData {
      * @param neededFor comma-separated recipe names
      * @param bought whether the item is bought
      */
-    public ShoppingListItemViewData(String name, String reason, String neededFor, boolean bought) {
+    public ShoppingListItemViewData(
+            String name, String reason, String neededFor, boolean bought) {
         this.name = name;
         this.reason = reason;
         this.neededFor = neededFor;
