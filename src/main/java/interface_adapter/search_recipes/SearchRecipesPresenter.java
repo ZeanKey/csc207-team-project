@@ -1,15 +1,19 @@
 package interface_adapter.search_recipes;
 
+import use_case.search_recipes.RecipeSummaryOutputData;
 import use_case.search_recipes.SearchRecipesOutputBoundary;
 import use_case.search_recipes.SearchRecipesOutputData;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Converts search results to view state.
+ * The Presenter for the Search Recipes use case.
  */
 public final class SearchRecipesPresenter implements SearchRecipesOutputBoundary {
+    static final String NO_RESULTS_MESSAGE = "No recipes found.";
+
     private final SearchRecipesViewModel viewModel;
 
     /**
@@ -23,24 +27,36 @@ public final class SearchRecipesPresenter implements SearchRecipesOutputBoundary
     }
 
     /**
-     * Updates the view model with the results or a no-results message.
+     * Shows one row per matching recipe, or a no-results message.
      *
      * @param outputData the successful search results
-     * @throws NullPointerException if outputData is null
      */
     @Override
     public void prepareSuccessView(SearchRecipesOutputData outputData) {
-        String message = outputData.getRecipes().isEmpty() ? "No recipes found." : "";
-        viewModel.setResults(outputData.getRecipes(), message);
+        final List<RecipeSearchResultViewData> rows = new ArrayList<>();
+        for (RecipeSummaryOutputData result : outputData.getResults()) {
+            final String thumbnail = result.getThumbnail() == null
+                    ? "" : result.getThumbnail().toString();
+            rows.add(new RecipeSearchResultViewData(
+                    result.getId(), result.getName(), thumbnail));
+        }
+        final SearchRecipesState state = new SearchRecipesState();
+        state.setResults(rows);
+        state.setMessage(rows.isEmpty() ? NO_RESULTS_MESSAGE : "");
+        viewModel.setState(state);
+        viewModel.notifyStateChanged();
     }
 
     /**
-     * Clears previous results and displays an error message.
+     * Clears previous results and shows the error message.
      *
      * @param message the error message to display
      */
     @Override
     public void prepareFailView(String message) {
-        viewModel.setResults(List.of(), message);
+        final SearchRecipesState state = new SearchRecipesState();
+        state.setMessage(message);
+        viewModel.setState(state);
+        viewModel.notifyStateChanged();
     }
 }

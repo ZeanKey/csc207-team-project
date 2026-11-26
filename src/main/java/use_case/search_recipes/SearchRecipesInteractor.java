@@ -2,11 +2,12 @@ package use_case.search_recipes;
 
 import entity.Recipe;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Validates a search and presents complete matching recipes.
+ * Validates a search and presents a summary of each matching recipe.
  */
 public final class SearchRecipesInteractor implements SearchRecipesInputBoundary {
     private final SearchRecipesDataAccessInterface dataAccess;
@@ -52,6 +53,11 @@ public final class SearchRecipesInteractor implements SearchRecipesInputBoundary
             presenter.prepareFailView("The recipe service could not complete the search. Please try again.");
             return;
         }
-        presenter.prepareSuccessView(new SearchRecipesOutputData(recipes));
+        final List<RecipeSummaryOutputData> results = new ArrayList<>();
+        for (Recipe recipe : recipes) {
+            results.add(new RecipeSummaryOutputData(
+                    recipe.getId(), recipe.getName(), recipe.getThumbnail()));
+        }
+        presenter.prepareSuccessView(new SearchRecipesOutputData(results));
     }
 }

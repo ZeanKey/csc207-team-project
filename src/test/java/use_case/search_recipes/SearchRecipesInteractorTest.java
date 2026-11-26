@@ -4,6 +4,7 @@ import entity.Recipe;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,14 +17,22 @@ class SearchRecipesInteractorTest {
     private final SearchRecipesInteractor interactor = new SearchRecipesInteractor(dao, presenter);
 
     @Test
-    void searchesByNameAndReturnsRecipes() {
-        Recipe recipe = new Recipe("meal:1", "Soup", null, null, null, null, List.of());
-        dao.results = List.of(recipe);
+    void searchesByNameAndPresentsASummaryOfEachRecipe() {
+        URI picture = URI.create("https://img/soup.jpg");
+        dao.results = List.of(
+                new Recipe("meal:1", "Soup", "Starter", "French", "Boil.", picture, List.of()),
+                new Recipe("meal:2", "Bread", null, null, null, null, List.of()));
 
         interactor.execute(new SearchRecipesInputData("  Soup  ", RecipeSearchType.NAME));
 
         assertEquals("name:Soup", dao.request);
-        assertEquals(List.of(recipe), presenter.output.getRecipes());
+        List<RecipeSummaryOutputData> results = presenter.output.getResults();
+        assertEquals(2, results.size());
+        assertEquals("meal:1", results.get(0).getId());
+        assertEquals("Soup", results.get(0).getName());
+        assertEquals(picture, results.get(0).getThumbnail());
+        assertEquals("meal:2", results.get(1).getId());
+        assertNull(results.get(1).getThumbnail());
         assertNull(presenter.error);
     }
 
@@ -32,7 +41,7 @@ class SearchRecipesInteractorTest {
         interactor.execute(new SearchRecipesInputData(" garlic ", RecipeSearchType.INGREDIENT));
 
         assertEquals("ingredient:garlic", dao.request);
-        assertTrue(presenter.output.getRecipes().isEmpty());
+        assertTrue(presenter.output.getResults().isEmpty());
         assertNull(presenter.error);
     }
 
@@ -45,6 +54,23 @@ class SearchRecipesInteractorTest {
         interactor.execute(new SearchRecipesInputData("soup", null));
         assertEquals("Please choose a search type.", presenter.error);
         assertNull(dao.request);
+    }
+
+    @Test
+    void rejectsMissingRequest() {
+        interactor.execute(null);
+
+        assertEquals("Please enter a search keyword.", presenter.error);
+        assertNull(dao.request);
+    }
+
+    @Test
+    void reportsIngredientSearchFailure() {
+        dao.fail = true;
+        interactor.execute(new SearchRecipesInputData("garlic", RecipeSearchType.INGREDIENT));
+
+        assertNull(presenter.output);
+        assertTrue(presenter.error.contains("try again"));
     }
 
     @Test
@@ -71,8 +97,11 @@ class SearchRecipesInteractorTest {
         }
 
         @Override
-        public List<Recipe> searchByIngredient(String keyword) {
+        public List<Recipe> searchByIngredient(String keyword) throws IOException {
             request = "ingredient:" + keyword;
+            if (fail) {
+                throw new IOException("unavailable");
+            }
             return results;
         }
     }

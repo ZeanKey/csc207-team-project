@@ -1,57 +1,56 @@
 package interface_adapter.search_recipes;
 
-import entity.Recipe;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * State observed by views displaying recipe search results.
- * Listeners run on the thread that updates the model.
+ * ViewModel for the Recipes page (use case 1a).
+ *
+ * <p>Searches run off the Swing thread, so listeners may be notified from a
+ * background thread; views are responsible for moving back to the Swing
+ * thread before touching components.</p>
  */
-public final class SearchRecipesViewModel {
-    private final List<Runnable> listeners = new ArrayList<>();
-    private volatile List<Recipe> recipes = List.of();
-    private volatile String message = "";
+public class SearchRecipesViewModel {
+
+    public static final String VIEW_NAME = "recipes";
+
+    private final List<SearchRecipesViewModelListener> listeners =
+            new CopyOnWriteArrayList<>();
+    private volatile SearchRecipesState state = new SearchRecipesState();
 
     /**
-     * Creates a view model with no results or message.
+     * Returns the current state.
+     *
+     * @return the state
      */
-    public SearchRecipesViewModel() {
+    public SearchRecipesState getState() {
+        return state;
     }
 
     /**
-     * Returns the current search results.
+     * Replaces the state without notifying listeners.
      *
-     * @return an unmodifiable list of recipe snapshots
+     * @param state the new state
      */
-    public List<Recipe> getRecipes() {
-        return recipes;
+    public void setState(SearchRecipesState state) {
+        this.state = state;
     }
 
     /**
-     * Returns the current informational or error message.
+     * Registers a listener for state changes.
      *
-     * @return the current message, initially an empty string
+     * @param listener the listener
      */
-    public String getMessage() {
-        return message;
-    }
-
-    /**
-     * Registers a callback for subsequent state updates.
-     * The callback runs on the thread that performs the update.
-     *
-     * @param listener the callback to register
-     */
-    public void addListener(Runnable listener) {
+    public void addListener(SearchRecipesViewModelListener listener) {
         listeners.add(listener);
     }
 
-    void setResults(List<Recipe> recipes, String message) {
-        this.recipes = List.copyOf(recipes);
-        this.message = message;
-        for (Runnable listener : listeners) {
-            listener.run();
+    /**
+     * Notifies all listeners that the state has changed.
+     */
+    public void notifyStateChanged() {
+        for (SearchRecipesViewModelListener listener : listeners) {
+            listener.stateChanged();
         }
     }
 }

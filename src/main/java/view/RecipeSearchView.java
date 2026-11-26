@@ -1,8 +1,10 @@
 package view;
 
-import entity.Recipe;
+import interface_adapter.search_recipes.RecipeSearchResultViewData;
 import interface_adapter.search_recipes.SearchRecipesController;
+import interface_adapter.search_recipes.SearchRecipesState;
 import interface_adapter.search_recipes.SearchRecipesViewModel;
+import interface_adapter.search_recipes.SearchRecipesViewModelListener;
 import use_case.search_recipes.RecipeSearchType;
 
 import javax.swing.BorderFactory;
@@ -12,46 +14,50 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
+import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Search form and result list, usable inside an application or a standalone demo.
+ * The View for the Recipes page: a search form and the list of results.
  */
-public final class RecipeSearchView extends JPanel {
+public final class RecipeSearchView extends JPanel implements SearchRecipesViewModelListener {
     private static final String SEARCH_BUTTON_TEXT = "Search";
     private static final String SEARCH_FIELD_LABEL_TEXT = "Search recipes:";
     private static final String SEARCH_INTERRUPTED_TEXT = "Search interrupted. Please try again.";
     private static final String SEARCH_FAILED_TEXT = "Search failed. Please try again.";
     private static final String SEARCH_PENDING_TEXT = "Searching...";
+    private static final int THUMBNAIL_WIDTH = 96;
+    private static final int THUMBNAIL_HEIGHT = 72;
 
     private final SearchRecipesViewModel viewModel;
-    private final SearchRecipesController controller;
     private final JTextField keyword = new JTextField(20);
     private final JComboBox<RecipeSearchType> searchType = new JComboBox<>(RecipeSearchType.values());
     private final JButton search = new JButton(SEARCH_BUTTON_TEXT);
     private final JLabel message = new JLabel(" ");
     private final JPanel results = new JPanel();
+    private SearchRecipesController searchRecipesController;
 
     /**
-     * Creates a search form and connects it to its view model and controller.
+     * Creates the Recipes page and starts listening to its view model.
+     * The controller is supplied afterwards with
+     * {@link #setSearchRecipesController(SearchRecipesController)}.
      *
      * @param viewModel the model supplying results and messages
-     * @param controller the controller handling search requests
-     * @throws NullPointerException if either argument is null
+     * @throws NullPointerException if viewModel is null
      */
-    public RecipeSearchView(SearchRecipesViewModel viewModel, SearchRecipesController controller) {
+    public RecipeSearchView(SearchRecipesViewModel viewModel) {
         super(new BorderLayout(8, 8));
         this.viewModel = Objects.requireNonNull(viewModel);
-        this.controller = Objects.requireNonNull(controller);
+        this.viewModel.addListener(this);
 
         setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
-        JPanel controls = new JPanel();
+        final JPanel controls = new JPanel();
         controls.add(new JLabel(SEARCH_FIELD_LABEL_TEXT));
         controls.add(keyword);
         controls.add(searchType);
@@ -62,21 +68,43 @@ public final class RecipeSearchView extends JPanel {
         add(message, BorderLayout.SOUTH);
 
         search.addActionListener(event -> startSearch());
-        keyword.addActionListener(event -> { if (search.isEnabled()) { startSearch(); } });
-        viewModel.addListener(() -> {
-            if (SwingUtilities.isEventDispatchThread()) {
-                refresh();
-            }
-            else {
-                SwingUtilities.invokeLater(this::refresh);
+        keyword.addActionListener(event -> {
+            if (search.isEnabled()) {
+                startSearch();
             }
         });
         refresh();
     }
 
+    /**
+     * Sets the controller that runs the search use case.
+     *
+     * @param controller the search controller
+     */
+    public void setSearchRecipesController(SearchRecipesController controller) {
+        this.searchRecipesController = controller;
+    }
+
+    /**
+     * Redraws the page from the view model, on the Swing thread.
+     */
+    @Override
+    public void stateChanged() {
+        if (SwingUtilities.isEventDispatchThread()) {
+            refresh();
+        }
+        else {
+            SwingUtilities.invokeLater(this::refresh);
+        }
+    }
+
     private void startSearch() {
-        String text = keyword.getText();
-        RecipeSearchType type = (RecipeSearchType) searchType.getSelectedItem();
+        final SearchRecipesController controller = searchRecipesController;
+        if (controller == null) {
+            return;
+        }
+        final String text = keyword.getText();
+        final RecipeSearchType type = (RecipeSearchType) searchType.getSelectedItem();
         search.setEnabled(false);
         message.setText(SEARCH_PENDING_TEXT);
         new SwingWorker<Void, Void>() {
@@ -104,17 +132,30 @@ public final class RecipeSearchView extends JPanel {
     }
 
     private void refresh() {
+        final SearchRecipesState state = viewModel.getState();
         results.removeAll();
-        message.setText(viewModel.getMessage().isEmpty() ? " " : viewModel.getMessage());
-        for (Recipe recipe : viewModel.getRecipes()) {
-            JPanel row = new JPanel(new BorderLayout(8, 8));
-            RecipeImageView image = new RecipeImageView(96, 72);
+        message.setText(state.getMessage().isEmpty() ? " " : state.getMessage());
+        for (RecipeSearchResultViewData result : state.getResults()) {
+            final JPanel row = new JPanel(new BorderLayout(8, 8));
+            final RecipeImageView image = new RecipeImageView(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
             row.add(image, BorderLayout.WEST);
-            row.add(new JLabel(recipe.getName()), BorderLayout.CENTER);
+            row.add(new JLabel(result.getName()), BorderLayout.CENTER);
             results.add(row);
-            image.setImage(recipe.getThumbnail());
+            image.setImage(toUri(result.getThumbnailUrl()));
         }
         results.revalidate();
         results.repaint();
+    }
+
+    private static URI toUri(String url) {
+        if (url.isEmpty()) {
+            return null;
+        }
+        try {
+            return URI.create(url);
+        }
+        catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 }

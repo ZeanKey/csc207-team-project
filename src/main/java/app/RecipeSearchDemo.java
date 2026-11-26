@@ -24,13 +24,15 @@ public final class RecipeSearchDemo {
      */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            SearchRecipesViewModel viewModel = new SearchRecipesViewModel();
-            SearchRecipesController controller = new SearchRecipesController(
+            final SearchRecipesViewModel viewModel = new SearchRecipesViewModel();
+            final RecipeSearchView view = new RecipeSearchView(viewModel);
+            final SearchRecipesController controller = new SearchRecipesController(
                     new SearchRecipesInteractor(new MealDbRecipeDataAccessObject(),
                             new SearchRecipesPresenter(viewModel)));
-            JFrame frame = new JFrame("MealMate — Search Recipes");
+            view.setSearchRecipesController(controller);
+            final JFrame frame = new JFrame("MealMate — Search Recipes");
             frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-            frame.setContentPane(new RecipeSearchView(viewModel, controller));
+            frame.setContentPane(view);
             frame.setSize(700, 500);
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
