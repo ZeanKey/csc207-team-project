@@ -306,13 +306,13 @@ A read-only snapshot of a recipe. The data source supplies an ID intended to rem
 **How it is used in the program:**
 - Only two places call the API: the recipe data access object (use case 1) and the ingredient catalog loader (use case 2). Everything else reads local files.
 - We use the free test key `1`. Filtering by several ingredients at once is a paid feature, so we don't use it.
-- Results are cached in local files, so recipes we've seen still load without internet (useful for the demo).
+- Recipe caching is planned; the current recipe search requires an internet connection.
 
 | Endpoint | Purpose | Used by |
 |---|---|---|
 | `search.php?s=<name>` | Search by recipe name; returns full recipes | 1a |
-| `filter.php?i=<ingredient>` | Search by one ingredient; returns **only** id, name, picture | 1a |
-| `lookup.php?i=<id>` | Full recipe by id | 1b |
+| `filter.php?i=<ingredient>` | Search by one ingredient; returns partial recipe data | 1a |
+| `lookup.php?i=<id>` | Full recipe by id | 1a (to complete ingredient results), 1b |
 | `list.php?i=list` | All known ingredient names | 2b (catalog) |
 | `random.php` | One random recipe | 1 (extension) |
 
