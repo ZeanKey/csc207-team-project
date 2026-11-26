@@ -182,7 +182,7 @@ Each use case below is led by one member. A lead owns every View listed under th
 | Yilin Hou | 2a View, 2b Add, 2c Update/remove fridge items; ingredient name catalog | Filter by expiring soon |
 | Shuyin Hu | 3a View week and a planned meal, 3b Remove/move | Switch to previous/next week; copy last week |
 | Shaoheng Fan | 4a Generate, 4b Tick off | Bought items go straight into the fridge; export as text |
-| Shengxi Zeng | 5a Cook a planned meal, 5b History | 5c Stats; undo a completion |
+| Jesse Zeng | 5a Cook a planned meal, 5b History | 5c Stats; undo a completion |
 
 Use cases 1 and 2 don't depend on any other use case, so they are the first end-to-end prototype for Milestone 2.
 
@@ -397,7 +397,7 @@ Following ca-login, each use case declares the small data access interface it ne
 | Shopping list | `data/shopping_list.json` | 4 | 4 |
 | Cooking history | `data/cooking_log.json` | 5 | 5a |
 
-The shared Swing application can construct `CookingScreens` with the same meal plan and fridge DAOs used by the other screens, plus a `FileCookingLogDataAccessObject`. Call `onShown()` when opening Cooking. Confirm saves the plan, then the fridge, then appends history. If a save fails, Cooking restores the attempted plan and fridge writes and reports whether recovery succeeded. The history file is replaced atomically. Recovery runs while the app is open and cannot undo a process exit mid-save.
+`AppBuilder` gives `CookingScreens` the same plan and fridge DAOs used by the other screens and a `FileCookingLogDataAccessObject`. Opening Cook reloads the pending meals. Confirm saves the plan, then the fridge, then appends history. If a save fails, Cooking restores the attempted plan and fridge writes and reports whether recovery succeeded. The history file is replaced atomically. Recovery runs while the app is open and cannot undo a process exit mid-save.
 
 JSON is read and written with `org.json`, and HTTP calls use OkHttp, the same libraries as ca-login.
 
@@ -430,13 +430,15 @@ TODO
 
 The first run downloads the ingredient list from TheMealDB, so an internet connection is needed once. (To be finalized.)
 
-### Cooking demo (5a and 5b)
+### Cook and History (5a and 5b)
 
-1. In IntelliJ, run `app.CookingDemo`.
+In `app.Main`, open **Cook** to work with the same weekly plan and fridge as the other pages. The shared app saves cooking history in `data/cooking_log.json`.
+
+1. For a standalone demo in IntelliJ, run `app.CookingDemo`.
 2. Select a meal and click **I cooked this**. Pick an outcome for each ingredient in the fridge and click **Confirm**. The meal disappears from the pending list.
 3. Click **History** to see the saved meal. Restart the demo to verify that the meal is still in history and stays off the pending list.
 
-The demo starts with sample meals and saves the fridge, plan, and history in `target/demo-data/cooking-demo.json`. Restarting the demo keeps the save, and `mvn clean` clears it along with the rest of `target/`. Pass a different file path as the first program argument to keep a save outside `target/`. Integration with the team's main application and shared pantry and meal plan storage is pending.
+The standalone demo starts with sample meals and saves the fridge, plan, and history in `target/demo-data/cooking-demo.json`. Restarting the demo keeps the save, and `mvn clean` clears it along with the rest of `target/`. Pass a different file path as the first program argument to keep a save outside `target/`.
 
 ---
 
