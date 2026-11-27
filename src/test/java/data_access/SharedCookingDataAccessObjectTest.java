@@ -22,6 +22,8 @@ import use_case.complete_meal.CompleteMealInteractor;
 import use_case.move_planned_meal.MovePlannedMealDataAccessInterface;
 import use_case.update_stock_level.UpdateStockLevelDataAccessInterface;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.DayOfWeek;
@@ -66,9 +68,16 @@ class SharedCookingDataAccessObjectTest {
 
     @Test
     void savesToTheTeamPlanAndPantryAndReopensHistory() {
+        final PlannedMeal original = plans.getMealPlan(WEEK).getMeals().get(DINNER);
         interactor(pantry, history).execute(CONFIRM);
 
-        assertTrue(plans.getMealPlan(WEEK).getMeals().get(DINNER).isCooked());
+        final PlannedMeal saved = plans.getMealPlan(WEEK).getMeals().get(DINNER);
+        assertTrue(saved.isCooked());
+        assertFalse(original.isCooked());
+        assertEquals(original.getRecipeId(), saved.getRecipeId());
+        assertEquals(original.getRecipeName(), saved.getRecipeName());
+        assertEquals(List.of("1 clove"), saved.getIngredients().stream()
+                .map(RecipeIngredient::getMeasureDescription).toList());
         assertTrue(pantry.loadPantry().find(GARLIC).isEmpty());
         final FileCookingLogDataAccessObject reopened =
                 new FileCookingLogDataAccessObject(directory.resolve("cooking_log.json"));
@@ -104,6 +113,10 @@ class SharedCookingDataAccessObjectTest {
 
     @Test
     void restoresPlanAndPantryWhenHistoryCannotBeWritten() {
+        final MealSlot lunch = new MealSlot(DayOfWeek.MONDAY, MealType.LUNCH);
+        final PlannedMeal alreadyCooked = new PlannedMeal("soup", "Soup", List.of());
+        alreadyCooked.markCooked();
+        plans.getMealPlan(WEEK).assign(lunch, alreadyCooked);
         // A file where the history directory should be makes the append fail.
         final Path pantryFile = directory.resolve("pantry.json");
         final FileCookingLogDataAccessObject unavailableHistory =
@@ -113,6 +126,7 @@ class SharedCookingDataAccessObjectTest {
 
         assertEquals("Could not save the cooking completion. Try again.", model.getStatus().message());
         assertOriginalData();
+        assertTrue(plans.getMealPlan(WEEK).getMeals().get(lunch).isCooked());
         interactor(pantry, history).execute(CONFIRM);
         assertEquals(1, history.loadHistory().size());
     }
@@ -194,6 +208,45 @@ class SharedCookingDataAccessObjectTest {
         assertFalse(store.saveCompletion(snapshot, new MealPlan(WEEK), new Pantry(), record));
 
         assertFalse(plans.getMealPlan(WEEK).getMeals().containsKey(DINNER));
+        assertTrue(pantry.loadPantry().find(GARLIC).isPresent());
+        assertTrue(history.loadHistory().isEmpty());
+    }
+
+    @Test
+    void rejectsChangedRecipeContentEvenWhenIdAndSlotStayTheSame() {
+        final FileMealPlanDataAccessObject filePlans =
+                new FileMealPlanDataAccessObject(directory.resolve("mealplans.json"));
+        filePlans.saveMealPlan(plans.getMealPlan(WEEK));
+        final SharedCookingDataAccessObject store = new SharedCookingDataAccessObject(filePlans, pantry, history);
+        final CompleteMealDataAccessInterface.Snapshot snapshot = store.loadSnapshot(WEEK);
+
+        final MealPlan edited = filePlans.getMealPlan(WEEK);
+        edited.remove(DINNER);
+        edited.assign(DINNER, new PlannedMeal("pasta", "Pasta",
+                List.of(new RecipeIngredient(GARLIC, "2 cloves"))));
+        filePlans.saveMealPlan(edited);
+
+        final CookingRecord record = new CookingRecord("pasta", "Pasta", LocalDate.now(CLOCK), WEEK, DINNER);
+        assertFalse(store.saveCompletion(snapshot, snapshot.mealPlan(), new Pantry(), record));
+
+        final PlannedMeal saved = filePlans.getMealPlan(WEEK).getMeals().get(DINNER);
+        assertFalse(saved.isCooked());
+        assertEquals("2 cloves", saved.getIngredients().get(0).getMeasureDescription());
+        assertTrue(pantry.loadPantry().find(GARLIC).isPresent());
+        assertTrue(history.loadHistory().isEmpty());
+    }
+
+    @Test
+    void reportsAnUnreadablePlanWithoutChangingPantryOrHistory() throws IOException {
+        final Path planFile = directory.resolve("mealplans.json");
+        final FileMealPlanDataAccessObject filePlans = new FileMealPlanDataAccessObject(planFile);
+        Files.writeString(planFile, "invalid JSON");
+        final SharedCookingDataAccessObject store = new SharedCookingDataAccessObject(filePlans, pantry, history);
+
+        new CompleteMealInteractor(store, new CookingPresenter(model), CLOCK).execute(CONFIRM);
+
+        assertEquals("Could not load the meal and pantry. Try again.", model.getStatus().message());
+        assertEquals("invalid JSON", Files.readString(planFile));
         assertTrue(pantry.loadPantry().find(GARLIC).isPresent());
         assertTrue(history.loadHistory().isEmpty());
     }
