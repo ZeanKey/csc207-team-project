@@ -9,7 +9,8 @@ import use_case.load_shopping_list.LoadShoppingListOutputData;
 /**
  * Presents loaded shopping-list data into the shopping list ViewModel.
  */
-public class LoadShoppingListPresenter implements LoadShoppingListOutputBoundary {
+public class LoadShoppingListPresenter
+        implements LoadShoppingListOutputBoundary {
 
     private final ShoppingListViewModel viewModel;
 
@@ -25,7 +26,8 @@ public class LoadShoppingListPresenter implements LoadShoppingListOutputBoundary
     @Override
     public void prepareSuccessView(LoadShoppingListOutputData outputData) {
         ShoppingListState state = viewModel.getState();
-        ShoppingListPresenterHelper.applyList(state, outputData.getShoppingList());
+        ShoppingListPresenterHelper.applyList(
+                state, outputData.getShoppingList());
         state.setError("");
         state.setMessage("");
         viewModel.setState(state);

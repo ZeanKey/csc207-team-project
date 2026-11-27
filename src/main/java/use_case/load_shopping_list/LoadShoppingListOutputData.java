@@ -16,7 +16,8 @@ public class LoadShoppingListOutputData {
      * @param shoppingList the list to show (never null)
      * @param empty true if there was no saved list
      */
-    public LoadShoppingListOutputData(ShoppingList shoppingList, boolean empty) {
+    public LoadShoppingListOutputData(
+            ShoppingList shoppingList, boolean empty) {
         this.shoppingList = shoppingList;
         this.empty = empty;
     }

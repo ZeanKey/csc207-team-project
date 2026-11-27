@@ -25,7 +25,8 @@ public class ToggleBoughtPresenter implements ToggleBoughtOutputBoundary {
     @Override
     public void prepareSuccessView(ToggleBoughtOutputData outputData) {
         ShoppingListState state = viewModel.getState();
-        ShoppingListPresenterHelper.applyList(state, outputData.getShoppingList());
+        ShoppingListPresenterHelper.applyList(
+                state, outputData.getShoppingList());
         state.setError("");
         state.setMessage("");
         viewModel.setState(state);
