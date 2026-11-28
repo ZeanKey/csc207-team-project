@@ -7,12 +7,14 @@ import entity.StockLevel;
 import java.time.LocalDate;
 
 /**
- * Default shopping rules: missing or expired → MISSING; LOW stock → LOW; otherwise skip.
+ * Default shopping rules: missing or expired → MISSING; LOW stock → LOW;
+ * otherwise skip.
  */
 public class DefaultShoppingNeedPolicy implements ShoppingNeedPolicy {
 
     @Override
-    public ShoppingItem.Reason classify(PantryItem pantryItem, LocalDate today) {
+    public ShoppingItem.Reason classify(
+            PantryItem pantryItem, LocalDate today) {
         if (pantryItem == null) {
             return ShoppingItem.Reason.MISSING;
         }

@@ -153,6 +153,28 @@ class GenerateShoppingListInteractorTest {
     }
 
     @Test
+    void keepsUntickedItemUntickedWhenRegenerating() {
+        MealPlan plan = new MealPlan(MONDAY);
+        plan.assign(new MealSlot(DayOfWeek.MONDAY, MealType.DINNER), pastaMeal());
+
+        ShoppingItem oldGarlic = new ShoppingItem(
+                IngredientName.fromRawName("Garlic"),
+                ShoppingItem.Reason.MISSING,
+                Set.of("Pasta"));
+        InMemoryShoppingDao dao = new InMemoryShoppingDao();
+        dao.lists.put(MONDAY, new ShoppingList(MONDAY, List.of(oldGarlic)));
+
+        FakePresenter presenter = new FakePresenter();
+        GenerateShoppingListInteractor interactor =
+                newInteractor(plan, new Pantry(), dao, presenter);
+        interactor.execute(new GenerateShoppingListInputData());
+
+        ShoppingItem garlic = presenter.output.getShoppingList()
+                .find(IngredientName.fromRawName("Garlic"));
+        assertFalse(garlic.isBought());
+    }
+
+    @Test
     void mergesSameIngredientAcrossRecipesByIngredientName() {
         MealPlan plan = new MealPlan(MONDAY);
         plan.assign(new MealSlot(DayOfWeek.MONDAY, MealType.DINNER), pastaMeal());

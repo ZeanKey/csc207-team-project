@@ -16,12 +16,14 @@ public final class ShoppingListPresenterHelper {
     }
 
     /**
-     * Copies a shopping list into the view state, split into missing and low groups.
+     * Copies a shopping list into the view state, split into missing and low
+     * groups.
      *
      * @param state the view state to update
      * @param shoppingList the list to display, or null
      */
-    public static void applyList(ShoppingListState state, ShoppingList shoppingList) {
+    public static void applyList(
+            ShoppingListState state, ShoppingList shoppingList) {
         List<ShoppingListItemViewData> missing = new ArrayList<>();
         List<ShoppingListItemViewData> low = new ArrayList<>();
         if (shoppingList != null) {

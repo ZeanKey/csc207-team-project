@@ -31,7 +31,7 @@ public final class Main {
     private static void createAndShow() {
         final JFrame application = new AppBuilder(Path.of("data"))
                 .addRecipesPlaceholder()
-                .addFridgePlaceholder()
+                .addFridgeView()
                 .addMealPlanView()
                 .addShoppingListView()
                 .addCookView()

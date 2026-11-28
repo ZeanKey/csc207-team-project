@@ -29,6 +29,17 @@ import java.util.List;
 public class ShoppingListView extends JPanel
         implements ShoppingListViewModel.ShoppingListViewModelListener {
 
+    /** Space between the page's top, centre and bottom areas, in pixels. */
+    private static final int GAP = 8;
+    /** Empty border around the whole page, in pixels. */
+    private static final int PADDING = 12;
+    /** Font size of the "Shopping List" title. */
+    private static final float TITLE_FONT_SIZE = 18f;
+    /** Space between the "Missing" and "Running low" sections, in pixels. */
+    private static final int SECTION_GAP = 12;
+    /** Space between two rows of a section, in pixels. */
+    private static final int ROW_GAP = 4;
+
     private final ShoppingListViewModel viewModel;
     private final LoadShoppingListController loadController;
     private final GenerateShoppingListController generateController;
@@ -56,11 +67,12 @@ public class ShoppingListView extends JPanel
         this.generateController = generateController;
         this.toggleBoughtController = toggleBoughtController;
 
-        setLayout(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        setLayout(new BorderLayout(GAP, GAP));
+        setBorder(BorderFactory.createEmptyBorder(
+                PADDING, PADDING, PADDING, PADDING));
 
         JLabel title = new JLabel("Shopping List");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
+        title.setFont(title.getFont().deriveFont(Font.BOLD, TITLE_FONT_SIZE));
 
         JButton generateButton = new JButton("Generate");
         generateButton.addActionListener(event -> generateController.execute());
@@ -76,7 +88,7 @@ public class ShoppingListView extends JPanel
         JPanel sections = new JPanel();
         sections.setLayout(new BoxLayout(sections, BoxLayout.Y_AXIS));
         sections.add(section("Missing", missingPanel));
-        sections.add(Box.createVerticalStrut(12));
+        sections.add(Box.createVerticalStrut(SECTION_GAP));
         sections.add(section("Running low", lowPanel));
         add(new JScrollPane(sections), BorderLayout.CENTER);
 
@@ -95,7 +107,8 @@ public class ShoppingListView extends JPanel
      * Called by ViewManager whenever this view becomes visible.
      */
     public void onShown() {
-        LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate weekStart = LocalDate.now()
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         loadController.execute(weekStart);
     }
 
@@ -105,7 +118,8 @@ public class ShoppingListView extends JPanel
     }
 
     private void refreshFromState(ShoppingListState state) {
-        rebuildSection(missingPanel, state.getMissingItems(), state.getWeekStart());
+        rebuildSection(
+                missingPanel, state.getMissingItems(), state.getWeekStart());
         rebuildSection(lowPanel, state.getLowItems(), state.getWeekStart());
         messageLabel.setText(blankToSpace(state.getMessage()));
         errorLabel.setText(blankToSpace(state.getError()));
@@ -123,11 +137,12 @@ public class ShoppingListView extends JPanel
         }
         for (ShoppingListItemViewData item : items) {
             panel.add(createRow(item, weekStart));
-            panel.add(Box.createVerticalStrut(4));
+            panel.add(Box.createVerticalStrut(ROW_GAP));
         }
     }
 
-    private JPanel createRow(ShoppingListItemViewData item, LocalDate weekStart) {
+    private JPanel createRow(
+            ShoppingListItemViewData item, LocalDate weekStart) {
         JPanel row = new JPanel(new BorderLayout());
         JCheckBox bought = new JCheckBox(item.getName(), item.isBought());
         bought.addActionListener(event -> {

@@ -24,14 +24,18 @@ import java.util.Set;
 /**
  * Builds a shopping list from this week's uncooked meals and the fridge.
  */
-public class GenerateShoppingListInteractor implements GenerateShoppingListInputBoundary {
+public class GenerateShoppingListInteractor
+        implements GenerateShoppingListInputBoundary {
 
-    private static final String NOTHING_PLANNED = "Nothing planned to shop for.";
-    private static final String HAVE_EVERYTHING = "You have everything you need.";
+    private static final String NOTHING_PLANNED =
+            "Nothing planned to shop for.";
+    private static final String HAVE_EVERYTHING =
+            "You have everything you need.";
 
     private final MealPlanReader mealPlanReader;
     private final PantryReader pantryReader;
-    private final GenerateShoppingListDataAccessInterface shoppingListDataAccess;
+    private final GenerateShoppingListDataAccessInterface
+            shoppingListDataAccess;
     private final ShoppingNeedPolicy needPolicy;
     private final GenerateShoppingListOutputBoundary presenter;
     private final Clock clock;
@@ -46,12 +50,13 @@ public class GenerateShoppingListInteractor implements GenerateShoppingListInput
      * @param presenter the output boundary
      * @param clock clock used to determine "today"
      */
-    public GenerateShoppingListInteractor(MealPlanReader mealPlanReader,
-                                          PantryReader pantryReader,
-                                          GenerateShoppingListDataAccessInterface shoppingListDataAccess,
-                                          ShoppingNeedPolicy needPolicy,
-                                          GenerateShoppingListOutputBoundary presenter,
-                                          Clock clock) {
+    public GenerateShoppingListInteractor(
+            MealPlanReader mealPlanReader,
+            PantryReader pantryReader,
+            GenerateShoppingListDataAccessInterface shoppingListDataAccess,
+            ShoppingNeedPolicy needPolicy,
+            GenerateShoppingListOutputBoundary presenter,
+            Clock clock) {
         this.mealPlanReader = mealPlanReader;
         this.pantryReader = pantryReader;
         this.shoppingListDataAccess = shoppingListDataAccess;
@@ -63,29 +68,35 @@ public class GenerateShoppingListInteractor implements GenerateShoppingListInput
     @Override
     public void execute(GenerateShoppingListInputData inputData) {
         LocalDate today = LocalDate.now(clock);
-        LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate weekStart =
+                today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
         MealPlan mealPlan = mealPlanReader.getMealPlan(weekStart);
-        List<PlannedMeal> uncooked = mealPlan == null ? List.of() : mealPlan.uncookedMeals();
+        List<PlannedMeal> uncooked =
+                mealPlan == null ? List.of() : mealPlan.uncookedMeals();
         if (uncooked.isEmpty()) {
             presenter.prepareFailView(new GenerateShoppingListOutputData(
                     null, NOTHING_PLANNED, true));
             return;
         }
 
-        Map<IngredientName, Set<String>> neededRecipes = collectIngredients(uncooked);
+        Map<IngredientName, Set<String>> neededRecipes =
+                collectIngredients(uncooked);
         Pantry pantry = pantryReader.getPantry();
-        ShoppingList previous = shoppingListDataAccess.loadShoppingList(weekStart);
+        ShoppingList previous =
+                shoppingListDataAccess.loadShoppingList(weekStart);
 
         List<ShoppingItem> items = new ArrayList<>();
-        for (Map.Entry<IngredientName, Set<String>> entry : neededRecipes.entrySet()) {
+        for (Map.Entry<IngredientName, Set<String>> entry
+                : neededRecipes.entrySet()) {
             IngredientName name = entry.getKey();
             PantryItem pantryItem = pantry.find(name).orElse(null);
             ShoppingItem.Reason reason = needPolicy.classify(pantryItem, today);
             if (reason == null) {
                 continue;
             }
-            ShoppingItem item = new ShoppingItem(name, reason, entry.getValue());
+            ShoppingItem item =
+                    new ShoppingItem(name, reason, entry.getValue());
             if (previous != null) {
                 ShoppingItem oldItem = previous.find(name);
                 if (oldItem != null && oldItem.isBought()) {
@@ -104,10 +115,12 @@ public class GenerateShoppingListInteractor implements GenerateShoppingListInput
         shoppingListDataAccess.saveShoppingList(list);
 
         String message = items.isEmpty() ? HAVE_EVERYTHING : "";
-        presenter.prepareSuccessView(new GenerateShoppingListOutputData(list, message, false));
+        presenter.prepareSuccessView(
+                new GenerateShoppingListOutputData(list, message, false));
     }
 
-    private Map<IngredientName, Set<String>> collectIngredients(List<PlannedMeal> meals) {
+    private Map<IngredientName, Set<String>> collectIngredients(
+            List<PlannedMeal> meals) {
         Map<IngredientName, Set<String>> result = new LinkedHashMap<>();
         for (PlannedMeal meal : meals) {
             for (RecipeIngredient ingredient : meal.getIngredients()) {

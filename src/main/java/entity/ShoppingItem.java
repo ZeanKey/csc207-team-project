@@ -14,7 +14,9 @@ public class ShoppingItem {
      * Why this ingredient needs to be bought.
      */
     public enum Reason {
+        /** Not in the fridge, or in the fridge but expired. */
         MISSING,
+        /** In the fridge but marked as running low. */
         LOW
     }
 
@@ -30,12 +32,15 @@ public class ShoppingItem {
      * @param reason why it needs to be bought
      * @param neededFor the recipe names that need it
      */
-    public ShoppingItem(IngredientName name, Reason reason, Set<String> neededFor) {
+    public ShoppingItem(
+            IngredientName name, Reason reason, Set<String> neededFor) {
         if (name == null || reason == null) {
-            throw new IllegalArgumentException("Name and reason cannot be null");
+            throw new IllegalArgumentException(
+                    "Name and reason cannot be null");
         }
         if (neededFor == null || neededFor.isEmpty()) {
-            throw new IllegalArgumentException("neededFor cannot be null or empty");
+            throw new IllegalArgumentException(
+                    "neededFor cannot be null or empty");
         }
         this.name = name;
         this.reason = reason;

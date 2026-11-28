@@ -9,11 +9,14 @@ import interface_adapter.generate_shopping_list.GenerateShoppingListController;
 import interface_adapter.generate_shopping_list.GenerateShoppingListPresenter;
 import interface_adapter.load_meal_plan.LoadMealPlanController;
 import interface_adapter.load_meal_plan.LoadMealPlanPresenter;
+import interface_adapter.load_pantry.LoadPantryController;
+import interface_adapter.load_pantry.LoadPantryPresenter;
 import interface_adapter.load_shopping_list.LoadShoppingListController;
 import interface_adapter.load_shopping_list.LoadShoppingListPresenter;
 import interface_adapter.meal_plan.MealPlanViewModel;
 import interface_adapter.move_planned_meal.MovePlannedMealController;
 import interface_adapter.move_planned_meal.MovePlannedMealPresenter;
+import interface_adapter.pantry.PantryViewModel;
 import interface_adapter.remove_planned_meal.RemovePlannedMealController;
 import interface_adapter.remove_planned_meal.RemovePlannedMealPresenter;
 import interface_adapter.shopping_list.ShoppingListViewModel;
@@ -22,12 +25,14 @@ import interface_adapter.toggle_bought.ToggleBoughtPresenter;
 import use_case.generate_shopping_list.DefaultShoppingNeedPolicy;
 import use_case.generate_shopping_list.GenerateShoppingListInteractor;
 import use_case.load_meal_plan.LoadMealPlanInteractor;
+import use_case.load_pantry.LoadPantryInteractor;
 import use_case.load_shopping_list.LoadShoppingListInteractor;
 import use_case.move_planned_meal.MovePlannedMealInteractor;
 import use_case.remove_planned_meal.RemovePlannedMealInteractor;
 import use_case.toggle_bought.ToggleBoughtInteractor;
 import view.MealPlanView;
 import view.NavigationBar;
+import view.PantryView;
 import view.ShoppingListView;
 import view.ViewManager;
 
@@ -48,8 +53,8 @@ import java.time.Clock;
  * <p>Each {@code addXxx} method creates one page, wires it to its
  * controllers, presenters and data access objects, registers it with the
  * ViewManager and adds its button to the navigation bar. Pages that are not
- * on main yet are placeholders; their owner replaces the placeholder method
- * with the real wiring.</p>
+ * on main yet (Recipes, Cook) are placeholders; their owner replaces the
+ * placeholder method with the real wiring.</p>
  */
 public class AppBuilder {
 
@@ -101,13 +106,20 @@ public class AppBuilder {
     }
 
     /**
-     * Adds a placeholder for the Fridge page (Use Case 2, Yilin).
+     * Adds the Fridge page (Use Case 2). Uses the same
+     * {@link FilePantryDataAccessObject} as the shopping list.
      *
      * @return this builder
      */
-    public AppBuilder addFridgePlaceholder() {
-        return addPlaceholder("Fridge", FRIDGE_VIEW_NAME,
-                "Fridge: Yilin adds PantryView here (Use Case 2).");
+    public AppBuilder addFridgeView() {
+        final PantryViewModel viewModel = new PantryViewModel();
+        final LoadPantryController loadController =
+                new LoadPantryController(new LoadPantryInteractor(
+                        pantryDataAccess,
+                        new LoadPantryPresenter(viewModel),
+                        Clock.systemDefaultZone()));
+        final PantryView view = new PantryView(viewModel, loadController);
+        return addPage("Fridge", FRIDGE_VIEW_NAME, view, view::onShown);
     }
 
     /**
