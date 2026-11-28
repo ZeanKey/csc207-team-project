@@ -34,7 +34,7 @@ public final class Main {
                 .addFridgeView()
                 .addMealPlanView()
                 .addShoppingListView()
-                .addCookPlaceholder()
+                .addCookView()
                 .build();
         application.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         application.setLocationRelativeTo(null);

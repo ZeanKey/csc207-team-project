@@ -1,5 +1,6 @@
 package app;
 
+import data_access.FileCookingLogDataAccessObject;
 import data_access.FileMealPlanDataAccessObject;
 import data_access.FilePantryDataAccessObject;
 import data_access.FileShoppingListDataAccessObject;
@@ -72,13 +73,14 @@ public class AppBuilder {
     private final FileMealPlanDataAccessObject mealPlanDataAccess;
     private final FilePantryDataAccessObject pantryDataAccess;
     private final FileShoppingListDataAccessObject shoppingListDataAccess;
+    private final FileCookingLogDataAccessObject cookingLogDataAccess;
 
     private String firstViewName;
 
     /**
      * Creates a builder whose pages read and save their files in the given
      * folder: {@code mealplans.json}, {@code pantry.json} and
-     * {@code shopping_list.json}.
+     * {@code shopping_list.json} and {@code cooking_log.json}.
      *
      * @param dataFolder the folder for the data files, usually {@code data}
      */
@@ -89,6 +91,8 @@ public class AppBuilder {
                 dataFolder.resolve("pantry.json"));
         shoppingListDataAccess = new FileShoppingListDataAccessObject(
                 dataFolder.resolve("shopping_list.json"));
+        cookingLogDataAccess = new FileCookingLogDataAccessObject(
+                dataFolder.resolve("cooking_log.json"));
     }
 
     /**
@@ -176,13 +180,14 @@ public class AppBuilder {
     }
 
     /**
-     * Adds a placeholder for the Cook page (Use Case 5, Jesse).
+     * Adds Cook and its History screen using the app's shared data stores.
      *
      * @return this builder
      */
-    public AppBuilder addCookPlaceholder() {
-        return addPlaceholder("Cook", COOK_VIEW_NAME,
-                "Cook: Jesse adds CookView here (Use Case 5).");
+    public AppBuilder addCookView() {
+        final CookingScreens view = new CookingScreens(mealPlanDataAccess,
+                pantryDataAccess, cookingLogDataAccess, Clock.systemDefaultZone());
+        return addPage("Cook", COOK_VIEW_NAME, view, view::onShown);
     }
 
     /**

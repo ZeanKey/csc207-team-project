@@ -157,6 +157,7 @@ Each use case below is led by one member. A lead owns every View listed under th
 - Alternative flows:
   - There are no uncooked meals this week: the system says so and suggests the Meal Plan page.
   - The meal was already marked as cooked (e.g. the list was out of date): the system says so and refreshes the list.
+  - If cooking was already recorded for that week and slot, the user can move the replacement meal to another slot.
   - The user presses "Cancel": nothing changes.
 
 **5b. View cooking history**
@@ -197,7 +198,7 @@ Each lead splits their use case into small Interactors, one per user action. Eac
 | 2 Fridge | `LoadPantry`, `AddPantryItem`, `UpdateStockLevel`, `RemovePantryItem`, `LoadIngredientCatalog` | fridge → `FilePantryDataAccessObject`; catalog → `MealDbIngredientCatalogDataAccessObject` |
 | 3 Meal Plan | `LoadMealPlan`, `RemovePlannedMeal`, `MovePlannedMeal` | meal plan → `FileMealPlanDataAccessObject` |
 | 4 Shopping | `LoadShoppingList`, `GenerateShoppingList`, `ToggleBought` | shopping list → `FileShoppingListDataAccessObject`; meal plan, fridge (read only) |
-| 5 Cooking | `LoadUncookedMeals`, `PrepareChecklist`, `CompleteMeal`, `LoadCookingHistory` | meal plan, fridge → their DAOs; history → `FileCookingLogDataAccessObject` |
+| 5 Cooking | `LoadUncookedMeals`, `PrepareChecklist`, `CompleteMeal`, `LoadCookingHistory` | `SharedCookingDataAccessObject` uses the shared meal plan and fridge DAOs plus `FileCookingLogDataAccessObject` |
 
 ---
 
@@ -396,6 +397,8 @@ Following ca-login, each use case declares the small data access interface it ne
 | Shopping list | `data/shopping_list.json` | 4 | 4 |
 | Cooking history | `data/cooking_log.json` | 5 | 5a |
 
+`AppBuilder` gives `CookingScreens` the same plan and fridge DAOs used by the other screens and a `FileCookingLogDataAccessObject`. Opening Cook reloads the pending meals. Confirm saves the plan, then the fridge, then appends history. If a save fails, Cooking restores the attempted plan and fridge writes and reports whether recovery succeeded. The history file is replaced atomically. Recovery runs while the app is open and cannot undo a process exit mid-save.
+
 JSON is read and written with `org.json`, and HTTP calls use OkHttp, the same libraries as ca-login.
 
 **Shared foundation that must be merged into `main` before anyone starts their use case:**
@@ -426,6 +429,16 @@ TODO
 3. Run `app.Main`.
 
 The first run downloads the ingredient list from TheMealDB, so an internet connection is needed once. (To be finalized.)
+
+### Cook and History (5a and 5b)
+
+In `app.Main`, open **Cook** to work with the same weekly plan and fridge as the other pages. The shared app saves cooking history in `data/cooking_log.json`.
+
+1. For a standalone demo in IntelliJ, run `app.CookingDemo`.
+2. Select a meal and click **I cooked this**. Pick an outcome for each ingredient in the fridge and click **Confirm**. The meal disappears from the pending list.
+3. Click **History** to see the saved meal. Restart the demo to verify that the meal is still in history and stays off the pending list.
+
+The standalone demo starts with sample meals and saves the fridge, plan, and history in `target/demo-data/cooking-demo.json`. Restarting the demo keeps the save, and `mvn clean` clears it along with the rest of `target/`. Pass a different file path as the first program argument to keep a save outside `target/`.
 
 ---
 
